@@ -87,5 +87,11 @@ export const routes: Routes = [
     data: { roles: ['ADMIN', 'MODERATOR'] }
   },
   
+  {
+    path: 'profile',
+    loadComponent: () => import('./features/profile/profile.component').then(m => m.ProfileComponent),
+    canActivate: [AuthGuard]
+  },
+  
   { path: '**', redirectTo: '/dashboard' }
 ];
