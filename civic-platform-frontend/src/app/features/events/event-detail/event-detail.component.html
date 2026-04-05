@@ -1,0 +1,11 @@
+<div class="container mx-auto px-4 py-8">
+  <a routerLink="/events" class="text-indigo-600">← Back to Events</a>
+  <div *ngIf="isLoading" class="text-center py-8">Loading...</div>
+  <div *ngIf="event && !isLoading" class="bg-white shadow rounded-lg p-6 mt-4">
+    <h1 class="text-2xl font-bold">{{ event.title }}</h1>
+    <p class="text-gray-600 mt-2">Date: {{ event.date | date:'full' }}</p>
+    <p class="text-gray-600">Location: {{ event.location }}</p>
+    <p class="text-gray-600">Capacity: {{ event.currentParticipants }}/{{ event.maxCapacity }}</p>
+    <button (click)="register()" class="mt-4 bg-indigo-600 text-white px-4 py-2 rounded">Register</button>
+  </div>
+</div>

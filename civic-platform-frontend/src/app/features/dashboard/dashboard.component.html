@@ -1,0 +1,233 @@
+<div class="min-h-screen bg-gray-50">
+  <!-- Header -->
+  <div class="bg-white shadow">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="py-6">
+        <div class="flex items-center justify-between">
+          <div>
+            <h1 class="text-2xl font-bold text-gray-900">Dashboard</h1>
+            <p class="mt-1 text-sm text-gray-500">Welcome back, {{ getUserName() }}!</p>
+          </div>
+          <div class="flex space-x-3">
+            <button 
+              (click)="refreshStats()" 
+              class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              [disabled]="isLoading"
+            >
+              <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 15m0 0A8.001 8.001 0 0015.938 7m-16 0a8.001 8.001 0 004.582 15m0 0A8.001 8.001 0 0015.938 7M15 9a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              Refresh
+            </button>
+            <button 
+              *ngIf="isAdmin() || isModerator()"
+              (click)="exportMetricsPdf()"
+              class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            >
+              <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              Export PDF
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="isLoading" class="flex justify-center items-center h-64">
+    <div class="text-center">
+      <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+      <p class="mt-4 text-gray-600">Loading dashboard statistics...</p>
+    </div>
+  </div>
+
+  <!-- Error State -->
+  <div *ngIf="error" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
+    <div class="bg-red-50 border border-red-200 rounded-md p-4">
+      <div class="flex">
+        <div class="flex-shrink-0">
+          <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293-1.293a1 1 0 00-1.414 1.414L8 12.414l2.293 2.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+          </svg>
+        </div>
+        <div class="ml-3">
+          <h3 class="text-sm font-medium text-red-800">Error</h3>
+          <div class="mt-2 text-sm text-red-700">
+            {{ error }}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dashboard Content -->
+  <div *ngIf="!isLoading && !error" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
+    <!-- Stats Grid -->
+    <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+      <div class="bg-white overflow-hidden shadow rounded-lg">
+        <div class="p-5">
+          <div class="flex items-center">
+            <div class="flex-shrink-0 bg-indigo-500 rounded-md p-3">
+              <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-6a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+              </svg>
+            </div>
+            <div class="ml-5 w-0 flex-1">
+              <dl>
+                <dt class="text-sm font-medium text-gray-500 truncate">Total Users</dt>
+                <dd class="text-lg font-medium text-gray-900">
+                  {{ (dashboardStats$ | async)?.totalUsers || 0 }}
+                </dd>
+              </dl>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white overflow-hidden shadow rounded-lg">
+        <div class="p-5">
+          <div class="flex items-center">
+            <div class="flex-shrink-0 bg-green-500 rounded-md p-3">
+              <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <div class="ml-5 w-0 flex-1">
+              <dl>
+                <dt class="text-sm font-medium text-gray-500 truncate">Active Campaigns</dt>
+                <dd class="text-lg font-medium text-gray-900">
+                  {{ ((dashboardStats$ | async)?.totalCampaignsByStatus || {})['ACTIVE'] || 0 }}
+                </dd>
+              </dl>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white overflow-hidden shadow rounded-lg">
+        <div class="p-5">
+          <div class="flex items-center">
+            <div class="flex-shrink-0 bg-yellow-500 rounded-md p-3">
+              <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599-1M12 8V7m0 1v8m0 0v8m0-6c2 0 1.998-1.586 4-5.143V8c0-3.557-2-6.143-4-6.143z" />
+              </svg>
+            </div>
+            <div class="ml-5 w-0 flex-1">
+              <dl>
+                <dt class="text-sm font-medium text-gray-500 truncate">Total Funding</dt>
+                <dd class="text-lg font-medium text-gray-900">
+                  ${{ (dashboardStats$ | async)?.totalFundingAmount?.toLocaleString() || 0 }}
+                </dd>
+              </dl>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white overflow-hidden shadow rounded-lg">
+        <div class="p-5">
+          <div class="flex items-center">
+            <div class="flex-shrink-0 bg-blue-500 rounded-md p-3">
+              <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7m9 13l-3-3m0 0l-3 3m3-3v8m0-6l3-3m-3 6h3m-3-6h3" />
+              </svg>
+            </div>
+            <div class="ml-5 w-0 flex-1">
+              <dl>
+                <dt class="text-sm font-medium text-gray-500 truncate">Total Events</dt>
+                <dd class="text-lg font-medium text-gray-900">
+                  {{ (dashboardStats$ | async)?.totalEvents || 0 }}
+                </dd>
+              </dl>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- User Type Distribution -->
+    <div class="mt-8">
+      <h3 class="text-lg leading-6 font-medium text-gray-900">User Distribution by Type</h3>
+      <div class="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        <div class="bg-white p-6 rounded-lg shadow">
+          <div class="flex items-center">
+            <div class="flex-shrink-0">
+              <div class="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center">
+                <span class="text-indigo-600 font-medium">A</span>
+              </div>
+            </div>
+            <div class="ml-4">
+              <h4 class="text-lg font-medium text-gray-900">Ambassadors</h4>
+              <p class="mt-1 text-sm text-gray-500">{{ ((dashboardStats$ | async)?.totalUsersByType || {})['AMBASSADOR'] || 0 }}</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white p-6 rounded-lg shadow">
+          <div class="flex items-center">
+            <div class="flex-shrink-0">
+              <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                <span class="text-green-600 font-medium">D</span>
+              </div>
+            </div>
+            <div class="ml-4">
+              <h4 class="text-lg font-medium text-gray-900">Donors</h4>
+              <p class="mt-1 text-sm text-gray-500">{{ ((dashboardStats$ | async)?.totalUsersByType || {})['DONOR'] || 0 }}</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white p-6 rounded-lg shadow">
+          <div class="flex items-center">
+            <div class="flex-shrink-0">
+              <div class="w-8 h-8 bg-yellow-100 rounded-full flex items-center justify-center">
+                <span class="text-yellow-600 font-medium">C</span>
+              </div>
+            </div>
+            <div class="ml-4">
+              <h4 class="text-lg font-medium text-gray-900">Citizens</h4>
+              <p class="mt-1 text-sm text-gray-500">{{ ((dashboardStats$ | async)?.totalUsersByType || {})['CITIZEN'] || 0 }}</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white p-6 rounded-lg shadow">
+          <div class="flex items-center">
+            <div class="flex-shrink-0">
+              <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                <span class="text-blue-600 font-medium">P</span>
+              </div>
+            </div>
+            <div class="ml-4">
+              <h4 class="text-lg font-medium text-gray-900">Participants</h4>
+              <p class="mt-1 text-sm text-gray-500">{{ ((dashboardStats$ | async)?.totalUsersByType || {})['PARTICIPANT'] || 0 }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Impact Metrics -->
+    <div class="mt-8">
+      <h3 class="text-lg leading-6 font-medium text-gray-900">Impact Metrics</h3>
+      <div class="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        <div class="bg-white p-6 rounded-lg shadow">
+          <h4 class="text-lg font-medium text-gray-900">CO₂ Saved</h4>
+          <p class="mt-2 text-3xl font-bold text-green-600">{{ (dashboardStats$ | async)?.totalCo2Saved || 0 }} kg</p>
+        </div>
+
+        <div class="bg-white p-6 rounded-lg shadow">
+          <h4 class="text-lg font-medium text-gray-900">Meals Distributed</h4>
+          <p class="mt-2 text-3xl font-bold text-blue-600">{{ (dashboardStats$ | async)?.totalMealsDistributed || 0 }}</p>
+        </div>
+
+        <div class="bg-white p-6 rounded-lg shadow">
+          <h4 class="text-lg font-medium text-gray-900">Most Active Region</h4>
+          <p class="mt-2 text-xl font-bold text-indigo-600">{{ (dashboardStats$ | async)?.mostActiveRegion || 'N/A' }}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

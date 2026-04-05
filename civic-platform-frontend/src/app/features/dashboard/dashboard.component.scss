@@ -1,0 +1,27 @@
+.stat-card {
+  @apply bg-white overflow-hidden shadow rounded-lg;
+}
+
+.stat-card-content {
+  @apply p-5;
+}
+
+.stat-icon {
+  @apply flex-shrink-0 rounded-md p-3;
+}
+
+.stat-details {
+  @apply ml-5 w-0 flex-1;
+}
+
+.user-type-card {
+  @apply bg-white p-6 rounded-lg shadow;
+}
+
+.user-type-icon {
+  @apply w-8 h-8 rounded-full flex items-center justify-center;
+}
+
+.metric-card {
+  @apply bg-white p-6 rounded-lg shadow;
+}

@@ -1,0 +1,70 @@
+import { Injectable } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Observable } from 'rxjs';
+
+export enum EventType {
+  VISITE = 'VISITE',
+  FORMATION = 'FORMATION',
+  DISTRIBUTION = 'DISTRIBUTION',
+  COLLECTE = 'COLLECTE'
+}
+
+export enum EventStatus {
+  UPCOMING = 'UPCOMING',
+  ONGOING = 'ONGOING',
+  COMPLETED = 'COMPLETED',
+  CANCELLED = 'CANCELLED'
+}
+
+export interface Event {
+  id: number;
+  title: string;
+  description?: string;
+  type: EventType;
+  status: EventStatus;
+  date: string;
+  location?: string;
+  maxCapacity?: number;
+  currentParticipants?: number;
+  createdAt?: string;
+}
+
+export interface EventRequest {
+  title: string;
+  description?: string;
+  type: EventType;
+  date: string;
+  location?: string;
+  maxCapacity?: number;
+}
+
+@Injectable({ providedIn: 'root' })
+export class EventsService {
+  private readonly API_URL = 'http://localhost:8081/api/events';
+
+  constructor(private http: HttpClient) {}
+
+  getAllEvents(): Observable<Event[]> {
+    return this.http.get<Event[]>(this.API_URL);
+  }
+
+  getEventById(id: number): Observable<Event> {
+    return this.http.get<Event>(`${this.API_URL}/${id}`);
+  }
+
+  createEvent(eventData: EventRequest): Observable<Event> {
+    return this.http.post<Event>(this.API_URL, eventData);
+  }
+
+  updateEvent(id: number, eventData: Partial<EventRequest>): Observable<Event> {
+    return this.http.put<Event>(`${this.API_URL}/${id}`, eventData);
+  }
+
+  deleteEvent(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.API_URL}/${id}`);
+  }
+
+  registerForEvent(id: number): Observable<void> {
+    return this.http.post<void>(`${this.API_URL}/${id}/register`, {});
+  }
+}

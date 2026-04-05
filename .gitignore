@@ -1,0 +1,39 @@
+# Backend
+/civic-platform-backend/target/
+/civic-platform-backend/.mvn/
+/civic-platform-backend/mvnw
+/civic-platform-backend/mvnw.cmd
+/civic-platform-backend/*.log
+/civic-platform-backend/.idea/
+/civic-platform-backend/*.iml
+/civic-platform-backend/.classpath
+/civic-platform-backend/.project
+/civic-platform-backend/.settings/
+/civic-platform-backend/HELP.md
+
+# Frontend
+/civic-platform-frontend/node_modules/
+/civic-platform-frontend/dist/
+/civic-platform-frontend/.angular/
+/civic-platform-frontend/.vscode/
+/civic-platform-frontend/*.log
+/civic-platform-frontend/.idea/
+/civic-platform-frontend/*.iml
+
+# General
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+.env
+.env.local
+
+# IDE
+.idea/
+.vscode/
+*.sublime-*
+
+# OS
+*.tmp
+*.temp

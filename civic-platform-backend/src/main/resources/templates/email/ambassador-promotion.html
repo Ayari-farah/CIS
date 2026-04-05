@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Congratulations! Ambassador Promotion</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+            border-radius: 5px 5px 0 0;
+        }
+        .content {
+            background-color: #f9f9f9;
+            padding: 30px;
+            border: 1px solid #ddd;
+        }
+        .footer {
+            background-color: #ecf0f1;
+            padding: 20px;
+            text-align: center;
+            border-radius: 0 0 5px 5px;
+            font-size: 12px;
+            color: #7f8c8d;
+        }
+        .button {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 24px;
+            text-decoration: none;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .button:hover {
+            opacity: 0.9;
+        }
+        .badge {
+            background-color: #ffd700;
+            color: #333;
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-weight: bold;
+            display: inline-block;
+            margin: 20px 0;
+            font-size: 18px;
+        }
+        .congratulations {
+            background-color: #fff3cd;
+            padding: 20px;
+            border-left: 4px solid #ffc107;
+            margin: 20px 0;
+            text-align: center;
+        }
+        .benefits {
+            background-color: #e8f5e8;
+            padding: 20px;
+            border-left: 4px solid #27ae60;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🏆 Congratulations!</h1>
+        <p>You've been promoted to Ambassador!</p>
+    </div>
+    
+    <div class="content">
+        <div class="congratulations">
+            <h2>Dear <span th:text="${userName}">User</span>,</h2>
+            <p>We're thrilled to announce your promotion to Ambassador status on <span th:text="${platformName}">Civic Platform</span>!</p>
+            <div class="badge">
+                🎖️ Badge: <span th:text="${badge}">COEUR</span>
+            </div>
+        </div>
+        
+        <p>Your dedication and active participation in our community have not gone unnoticed. You've demonstrated exceptional commitment through your involvement in events and community initiatives.</p>
+        
+        <div class="benefits">
+            <h3>🌟 Ambassador Benefits:</h3>
+            <ul>
+                <li>Exclusive access to ambassador-only events</li>
+                <li>Priority registration for high-impact campaigns</li>
+                <li>Special recognition on your profile</li>
+                <li>Leadership opportunities in community projects</li>
+                <li>Direct communication with platform organizers</li>
+                <li>Ability to mentor new community members</li>
+            </ul>
+        </div>
+        
+        <p>As an Ambassador, you now have the opportunity to:</p>
+        <ul>
+            <li>Lead and organize community events</li>
+            <li>Inspire others through your example</li>
+            <li>Help shape the future of our platform</li>
+            <li>Make an even greater impact in our community</li>
+        </ul>
+        
+        <a href="http://localhost:4200/profile" class="button">View Your Profile</a>
+        
+        <p>We're excited to see the amazing things you'll accomplish as an Ambassador. Your journey with us is just getting started!</p>
+        
+        <p>Thank you for your continued dedication and service to our community.</p>
+        
+        <p>With gratitude and admiration,<br>The <span th:text="${platformName}">Civic Platform</span> Team</p>
+    </div>
+    
+    <div class="footer">
+        <p>&copy; 2024 <span th:text="${platformName}">Civic Platform</span>. All rights reserved.</p>
+        <p>This is an automated message. Please do not reply to this email.</p>
+    </div>
+</body>
+</html>

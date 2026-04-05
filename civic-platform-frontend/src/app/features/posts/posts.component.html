@@ -1,0 +1,19 @@
+<div class="container mx-auto px-4 py-8">
+  <h1 class="text-3xl font-bold mb-6">Posts</h1>
+  <div *ngIf="isLoading" class="text-center">Loading...</div>
+  <div *ngIf="errorMessage" class="text-red-600">{{ errorMessage }}</div>
+  <div class="space-y-4">
+    <div *ngFor="let post of posts" class="bg-white shadow rounded-lg p-4">
+      <div class="flex justify-between">
+        <span class="font-bold">{{ post.creator }}</span>
+        <span class="text-sm text-gray-500">{{ post.createdAt | date }}</span>
+      </div>
+      <p class="mt-2">{{ post.content }}</p>
+      <div class="mt-2 flex gap-4">
+        <button (click)="likePost(post)" class="text-indigo-600">Like ({{ post.likesCount }})</button>
+        <span class="px-2 py-1 rounded text-xs" [ngClass]="getStatusColor(post.status)">{{ post.status }}</span>
+      </div>
+      <a [routerLink]="['/posts', post.id]" class="block mt-2 text-indigo-600">View Comments →</a>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,14 @@
+<div class="container mx-auto px-4 py-8">
+  <a routerLink="/projects" class="text-indigo-600">← Back to Projects</a>
+  <div *ngIf="isLoading" class="text-center py-8">Loading...</div>
+  <div *ngIf="project && !isLoading" class="bg-white shadow rounded-lg p-6 mt-4">
+    <h1 class="text-2xl font-bold">{{ project.title }}</h1>
+    <p class="text-gray-600 mt-2">{{ project.description }}</p>
+    <div class="mt-4">
+      <p>Goal: {{ project.goalAmount | currency }}</p>
+      <p>Current: {{ project.currentAmount | currency }}</p>
+      <p>Votes: {{ project.voteCount }}</p>
+    </div>
+    <button (click)="vote()" class="mt-4 bg-green-600 text-white px-4 py-2 rounded">Vote</button>
+  </div>
+</div>

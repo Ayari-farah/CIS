@@ -1,0 +1,22 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": "./out-tsc/app",
+    "types": []
+  },
+  "files": [
+    "src/main.ts",
+    "src/app/core/services/auth.service.ts",
+    "src/app/core/services/users.service.ts",
+    "src/app/core/services/campaigns.service.ts",
+    "src/app/core/services/events.service.ts",
+    "src/app/core/services/projects.service.ts",
+    "src/app/core/services/posts.service.ts",
+    "src/app/core/services/metrics.service.ts",
+    "src/app/core/models/auth.models.ts",
+    "src/app/core/models/common.models.ts"
+  ],
+  "include": [
+    "src/**/*.ts"
+  ]
+}
