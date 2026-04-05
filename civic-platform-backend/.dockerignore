@@ -1,0 +1,17 @@
+target/
+*.jar
+*.war
+*.ear
+*.class
+*.log
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+.git/
+.gitignore
+*.md
+Dockerfile
+docker-compose.yml
+.dockerignore

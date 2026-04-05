@@ -1,0 +1,72 @@
+version: '3.8'
+
+services:
+  db:
+    image: mariadb:latest
+    container_name: civic-platform-db
+    ports:
+      - "3310:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_DATABASE=civic_platform
+    volumes:
+      - mariadb_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - civic-platform-network
+
+  backend:
+    image: teamsync-backend:latest
+    container_name: civic-platform-backend
+    build:
+      context: ./civic-platform-backend
+      dockerfile: Dockerfile
+    ports:
+      - "8180:8080"
+      - "5005:5005"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mariadb://db:3306/civic_platform
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=root
+      - CORS_ALLOWED_ORIGINS=http://localhost:4222
+      - JAVA_TOOL_OPTIONS=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./civic-platform-backend:/app
+      - maven_cache:/root/.m2
+    networks:
+      - civic-platform-network
+
+  frontend:
+    image: teamsync-frontend:latest
+    container_name: civic-platform-frontend
+    build:
+      context: ./civic-platform-frontend
+      dockerfile: Dockerfile
+    ports:
+      - "4222:4200"
+    environment:
+      - API_URL=http://localhost:8180/api
+    volumes:
+      - ./civic-platform-frontend:/app
+      - node_modules:/app/node_modules
+    depends_on:
+      - backend
+    networks:
+      - civic-platform-network
+    command: ng serve --host 0.0.0.0 --port 4200 --poll 2000
+
+volumes:
+  mariadb_data:
+  maven_cache:
+  node_modules:
+
+networks:
+  civic-platform-network:
+    driver: bridge

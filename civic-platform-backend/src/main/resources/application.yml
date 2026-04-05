@@ -1,5 +1,5 @@
 server:
-  port: 8081
+  port: ${SERVER_PORT:8080}
   servlet:
     context-path: /api
 
@@ -8,10 +8,10 @@ spring:
     name: civic-platform-backend
   
   datasource:
-    url: jdbc:mariadb://localhost:3306/civic_platform?createDatabaseIfNotExist=true
+    url: ${SPRING_DATASOURCE_URL:jdbc:mariadb://localhost:3306/civic_platform?createDatabaseIfNotExist=true}
     driver-class-name: org.mariadb.jdbc.Driver
-    username: root
-    password: ${DB_PASSWORD:root}
+    username: ${SPRING_DATASOURCE_USERNAME:root}
+    password: ${SPRING_DATASOURCE_PASSWORD:root}
     
   jpa:
     hibernate:
