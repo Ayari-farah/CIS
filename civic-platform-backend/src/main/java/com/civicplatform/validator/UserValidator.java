@@ -29,34 +29,6 @@ public class UserValidator implements ConstraintValidator<ValidUser, UserRequest
         }
 
         if (userRequest.getUserType() == UserType.DONOR) {
-            if (isBlank(userRequest.getFirstName())) {
-                context.disableDefaultConstraintViolation();
-                context.buildConstraintViolationWithTemplate("First name is required")
-                       .addPropertyNode("firstName")
-                       .addConstraintViolation();
-                isValid = false;
-            }
-            if (isBlank(userRequest.getLastName())) {
-                context.disableDefaultConstraintViolation();
-                context.buildConstraintViolationWithTemplate("Last name is required")
-                       .addPropertyNode("lastName")
-                       .addConstraintViolation();
-                isValid = false;
-            }
-            if (isBlank(userRequest.getPhone())) {
-                context.disableDefaultConstraintViolation();
-                context.buildConstraintViolationWithTemplate("Phone is required for DONOR users")
-                       .addPropertyNode("phone")
-                       .addConstraintViolation();
-                isValid = false;
-            }
-            if (isBlank(userRequest.getAddress())) {
-                context.disableDefaultConstraintViolation();
-                context.buildConstraintViolationWithTemplate("Address is required for DONOR users")
-                       .addPropertyNode("address")
-                       .addConstraintViolation();
-                isValid = false;
-            }
             if (isBlank(userRequest.getAssociationName())) {
                 context.disableDefaultConstraintViolation();
                 context.buildConstraintViolationWithTemplate("Association name is required for DONOR users")
@@ -99,20 +71,6 @@ public class UserValidator implements ConstraintValidator<ValidUser, UserRequest
                 context.disableDefaultConstraintViolation();
                 context.buildConstraintViolationWithTemplate("Last name is required")
                        .addPropertyNode("lastName")
-                       .addConstraintViolation();
-                isValid = false;
-            }
-            if (isBlank(userRequest.getPhone())) {
-                context.disableDefaultConstraintViolation();
-                context.buildConstraintViolationWithTemplate("Phone is required")
-                       .addPropertyNode("phone")
-                       .addConstraintViolation();
-                isValid = false;
-            }
-            if (isBlank(userRequest.getAddress())) {
-                context.disableDefaultConstraintViolation();
-                context.buildConstraintViolationWithTemplate("Address is required")
-                       .addPropertyNode("address")
                        .addConstraintViolation();
                 isValid = false;
             }

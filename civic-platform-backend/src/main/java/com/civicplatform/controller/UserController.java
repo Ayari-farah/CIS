@@ -54,6 +54,13 @@ public class UserController {
         return ResponseEntity.ok(response);
     }
 
+    @Operation(summary = "Get current authenticated user")
+    @GetMapping("/me")
+    public ResponseEntity<UserResponse> getCurrentUser(Authentication authentication) {
+        UserResponse response = userService.getUserByEmail(authentication.getName());
+        return ResponseEntity.ok(response);
+    }
+
     @Operation(summary = "Get users by type")
     @GetMapping("/type/{userType}")
     public ResponseEntity<List<UserResponse>> getUsersByType(@PathVariable UserType userType) {

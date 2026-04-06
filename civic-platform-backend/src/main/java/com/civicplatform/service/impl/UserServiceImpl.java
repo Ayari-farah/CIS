@@ -5,6 +5,7 @@ import com.civicplatform.dto.request.UserRequest;
 import com.civicplatform.dto.response.UserResponse;
 import com.civicplatform.entity.User;
 import com.civicplatform.enums.Badge;
+import com.civicplatform.enums.Role;
 import com.civicplatform.enums.UserType;
 import com.civicplatform.mapper.UserMapper;
 import com.civicplatform.repository.EventParticipantRepository;
@@ -32,6 +33,10 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public UserResponse createUser(UserRequest userRequest) {
         User user = userMapper.toEntity(userRequest);
+        // Always hardcode these fields on registration - ignore any values in request
+        user.setRole(Role.USER);
+        user.setBadge(null);
+        user.setPoints(0);
         user = userRepository.save(user);
         return userMapper.toResponse(user);
     }

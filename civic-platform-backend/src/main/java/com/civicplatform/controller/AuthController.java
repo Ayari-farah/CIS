@@ -44,8 +44,14 @@ public class AuthController {
 
     @Operation(summary = "Logout user")
     @PostMapping("/logout")
-    public ResponseEntity<Void> logout(@RequestHeader("Authorization") String authorization) {
+    public ResponseEntity<Void> logout(@RequestHeader(value = "Authorization", required = false) String authorization) {
+        if (authorization == null || !authorization.startsWith("Bearer ")) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
         String refreshToken = authorization.replace("Bearer ", "");
+        if (refreshToken.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
         authService.logout(refreshToken);
         return ResponseEntity.ok().build();
     }

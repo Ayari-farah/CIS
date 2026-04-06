@@ -3,7 +3,6 @@ package com.civicplatform.mapper;
 import com.civicplatform.dto.request.UserRequest;
 import com.civicplatform.dto.response.UserResponse;
 import com.civicplatform.entity.User;
-import com.civicplatform.enums.Badge;
 import com.civicplatform.enums.Role;
 import org.mapstruct.AfterMapping;
 import org.mapstruct.Mapper;
@@ -40,9 +39,6 @@ public interface UserMapper {
     
     @AfterMapping
     default void setDefaults(@MappingTarget User user) {
-        if (user.getBadge() == null) {
-            user.setBadge(Badge.NONE);
-        }
         if (user.getPoints() == null) {
             user.setPoints(0);
         }

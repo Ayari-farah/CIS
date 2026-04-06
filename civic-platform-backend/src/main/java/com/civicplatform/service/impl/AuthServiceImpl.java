@@ -6,6 +6,8 @@ import com.civicplatform.dto.request.UserRequest;
 import com.civicplatform.dto.response.AuthResponse;
 import com.civicplatform.entity.RefreshToken;
 import com.civicplatform.entity.User;
+import com.civicplatform.enums.Badge;
+import com.civicplatform.enums.Role;
 import com.civicplatform.mapper.UserMapper;
 import com.civicplatform.repository.RefreshTokenRepository;
 import com.civicplatform.repository.UserRepository;
@@ -49,6 +51,10 @@ public class AuthServiceImpl implements AuthService {
         // Create new user
         User user = userMapper.toEntityForCreate(userRequest);
         user.setPassword(passwordEncoder.encode(userRequest.getPassword()));
+        // Always hardcode these fields on registration - ignore any values in request
+        user.setRole(Role.USER);
+        user.setBadge(null);
+        user.setPoints(0);
 
         user = userRepository.save(user);
 
@@ -86,11 +92,11 @@ public class AuthServiceImpl implements AuthService {
         String refreshToken = refreshTokenRequest.getRefreshToken();
         
         RefreshToken tokenEntity = refreshTokenRepository.findByToken(refreshToken)
-                .orElseThrow(() -> new RuntimeException("Invalid refresh token"));
+                .orElseThrow(() -> new BadCredentialsException("Invalid refresh token"));
 
         if (tokenEntity.isExpired()) {
             refreshTokenRepository.delete(tokenEntity);
-            throw new RuntimeException("Refresh token expired");
+            throw new BadCredentialsException("Refresh token expired");
         }
 
         User user = tokenEntity.getUser();
