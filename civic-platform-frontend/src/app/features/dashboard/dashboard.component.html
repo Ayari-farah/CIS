@@ -1,51 +1,69 @@
-<div class="min-h-screen bg-gray-50">
+<div class="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50">
   <!-- Header -->
-  <div class="bg-white shadow">
+  <div class="bg-white shadow-sm border-b border-indigo-100">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="py-6">
         <div class="flex items-center justify-between">
-          <div>
-            <h1 class="text-2xl font-bold text-gray-900">Dashboard</h1>
-            <p class="mt-1 text-sm text-gray-500">Welcome back, {{ getUserName() }}!</p>
+          <div class="flex items-center space-x-4">
+            <div class="h-12 w-12 rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-xl shadow-lg">
+              {{ getUserName().charAt(0).toUpperCase() }}
+            </div>
+            <div>
+              <h1 class="text-2xl font-bold text-gray-900">Welcome, {{ getUserName() }}!</h1>
+              <div class="flex items-center mt-1 space-x-2">
+                <span class="text-sm text-gray-500">{{ getUserType() }}</span>
+                <app-badge [badge]="getUserBadge()" [awardedDate]="getAwardedDate()" size="sm"></app-badge>
+              </div>
+            </div>
           </div>
-          <div class="flex space-x-3">
-            <button 
-              (click)="refreshStats()" 
-              class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-              [disabled]="isLoading"
-            >
-              <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 15m0 0A8.001 8.001 0 0015.938 7m-16 0a8.001 8.001 0 004.582 15m0 0A8.001 8.001 0 0015.938 7M15 9a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
-              Refresh
-            </button>
-            <button 
-              *ngIf="isAdmin() || isModerator()"
-              (click)="exportMetricsPdf()"
-              class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-            >
-              <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-              Export PDF
-            </button>
-          </div>
+          <button
+            (click)="refreshData()"
+            class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
+            [disabled]="isLoading"
+          >
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0A8.001 8.001 0 0015.938 15M9 12l2 2 4-4" />
+            </svg>
+            Refresh
+          </button>
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- Tabs Navigation -->
+  <div class="bg-white border-b border-gray-200">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <nav class="flex space-x-8" aria-label="Tabs">
+        <button
+          *ngFor="let tab of getTabs()"
+          (click)="setActiveTab(tab.id)"
+          [class]="isActiveTab(tab.id)
+            ? 'border-indigo-500 text-indigo-600 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm'
+            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors'"
+        >
+          <div class="flex items-center">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" [attr.d]="tab.icon" />
+            </svg>
+            {{ tab.label }}
+          </div>
+        </button>
+      </nav>
     </div>
   </div>
 
   <!-- Loading State -->
   <div *ngIf="isLoading" class="flex justify-center items-center h-64">
     <div class="text-center">
-      <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
-      <p class="mt-4 text-gray-600">Loading dashboard statistics...</p>
+      <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+      <p class="mt-4 text-gray-600">Loading dashboard data...</p>
     </div>
   </div>
 
   <!-- Error State -->
-  <div *ngIf="error" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
-    <div class="bg-red-50 border border-red-200 rounded-md p-4">
+  <div *ngIf="error && !isLoading" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
+    <div class="bg-red-50 border-l-4 border-red-400 rounded-md p-4">
       <div class="flex">
         <div class="flex-shrink-0">
           <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
@@ -54,178 +72,518 @@
         </div>
         <div class="ml-3">
           <h3 class="text-sm font-medium text-red-800">Error</h3>
-          <div class="mt-2 text-sm text-red-700">
-            {{ error }}
+          <div class="mt-2 text-sm text-red-700">{{ error }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DONOR TABS CONTENT -->
+  <div *ngIf="!isLoading && !error && isDonor()" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+    <!-- My Campaigns Tab -->
+    <div *ngIf="isActiveTab('campaigns')" class="space-y-6">
+      <div class="flex items-center justify-between">
+        <h2 class="text-2xl font-bold text-gray-900">My Campaigns</h2>
+        <a routerLink="/campaigns/create" class="inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700">
+          <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+          </svg>
+          New Campaign
+        </a>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div *ngFor="let campaign of myCampaigns" class="bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow border border-gray-100 overflow-hidden">
+          <div class="p-6">
+            <div class="flex items-center justify-between mb-4">
+              <span [class]="getCampaignStatusColor(campaign.status) + ' px-3 py-1 rounded-full text-xs font-medium'">{{ campaign.status }}</span>
+              <span class="text-gray-400 text-sm">{{ campaign.type }}</span>
+            </div>
+            <h3 class="text-lg font-semibold text-gray-900 mb-2">{{ campaign.name }}</h3>
+            <p class="text-gray-600 text-sm mb-4 line-clamp-2">{{ campaign.description || 'No description' }}</p>
+            <div class="flex items-center justify-between text-sm text-gray-500">
+              <span>{{ campaign.voteCount || 0 }} votes</span>
+              <span>{{ campaign.startDate | date:'mediumDate' }}</span>
+            </div>
+          </div>
+        </div>
+        <div *ngIf="myCampaigns.length === 0" class="col-span-full text-center py-12 bg-white rounded-xl shadow-sm border border-gray-100">
+          <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
+          </svg>
+          <h3 class="mt-2 text-sm font-medium text-gray-900">No campaigns yet</h3>
+          <p class="mt-1 text-sm text-gray-500">Get started by creating a new campaign.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- My Events Tab -->
+    <div *ngIf="isActiveTab('events')" class="space-y-6">
+      <div class="flex items-center justify-between">
+        <h2 class="text-2xl font-bold text-gray-900">My Events</h2>
+        <a routerLink="/events/create" class="inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700">
+          <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+          </svg>
+          New Event
+        </a>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div *ngFor="let event of myEvents" class="bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow border border-gray-100 overflow-hidden">
+          <div class="p-6">
+            <div class="flex items-center justify-between mb-4">
+              <span [class]="getEventStatusColor(event.status) + ' px-3 py-1 rounded-full text-xs font-medium'">{{ event.status }}</span>
+              <span class="text-gray-400 text-sm">{{ event.type }}</span>
+            </div>
+            <h3 class="text-lg font-semibold text-gray-900 mb-2">{{ event.title }}</h3>
+            <p class="text-gray-600 text-sm mb-4 line-clamp-2">{{ event.description || 'No description' }}</p>
+            <div class="space-y-2 text-sm text-gray-500">
+              <div class="flex items-center">
+                <svg class="w-4 h-4 mr-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                {{ event.location || 'No location' }}
+              </div>
+              <div class="flex items-center">
+                <svg class="w-4 h-4 mr-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                {{ event.date | date:'mediumDate' }}
+              </div>
+            </div>
+          </div>
+        </div>
+        <div *ngIf="myEvents.length === 0" class="col-span-full text-center py-12 bg-white rounded-xl shadow-sm border border-gray-100">
+          <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
+          <h3 class="mt-2 text-sm font-medium text-gray-900">No events yet</h3>
+          <p class="mt-1 text-sm text-gray-500">Create your first event to get started.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- My Projects Tab -->
+    <div *ngIf="isActiveTab('projects')" class="space-y-6">
+      <div class="flex items-center justify-between">
+        <h2 class="text-2xl font-bold text-gray-900">My Projects</h2>
+        <a routerLink="/projects/create" class="inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700">
+          <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+          </svg>
+          New Project
+        </a>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div *ngFor="let project of myProjects" class="bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow border border-gray-100 overflow-hidden">
+          <div class="p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-2">{{ project.title }}</h3>
+            <p class="text-gray-600 text-sm mb-4 line-clamp-2">{{ project.description || 'No description' }}</p>
+            <div class="mb-4">
+              <div class="flex justify-between text-sm mb-1">
+                <span class="text-gray-600">${{ project.currentAmount | number }} raised</span>
+                <span class="text-gray-900 font-medium">${{ project.goalAmount | number }} goal</span>
+              </div>
+              <div class="w-full bg-gray-200 rounded-full h-2.5">
+                <div class="bg-gradient-to-r from-green-400 to-green-600 h-2.5 rounded-full transition-all" [style.width.%]="getProjectProgress(project)"></div>
+              </div>
+              <div class="text-center mt-1 text-sm text-gray-500">{{ getProjectProgress(project) }}% funded</div>
+            </div>
+            <div class="flex items-center justify-between text-sm text-gray-500">
+              <span>{{ project.voteCount || 0 }} votes</span>
+              <span [class]="project.status === 'ACTIVE' ? 'text-green-600 font-medium' : 'text-gray-500'">{{ project.status }}</span>
+            </div>
+          </div>
+        </div>
+        <div *ngIf="myProjects.length === 0" class="col-span-full text-center py-12 bg-white rounded-xl shadow-sm border border-gray-100">
+          <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+          <h3 class="mt-2 text-sm font-medium text-gray-900">No projects yet</h3>
+          <p class="mt-1 text-sm text-gray-500">Start a new project to raise funds.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- My Posts Tab (Donor) -->
+    <div *ngIf="isActiveTab('posts')" class="space-y-6">
+      <div class="flex items-center justify-between">
+        <h2 class="text-2xl font-bold text-gray-900">My Posts</h2>
+        <a routerLink="/posts/create" class="inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700">
+          <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+          </svg>
+          New Post
+        </a>
+      </div>
+      <div class="space-y-4">
+        <div *ngFor="let post of myPosts" class="bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow border border-gray-100 p-6">
+          <div class="flex items-start space-x-4">
+            <div class="flex-shrink-0">
+              <div class="h-10 w-10 rounded-full bg-gradient-to-r from-indigo-400 to-purple-500 flex items-center justify-center text-white font-medium">
+                {{ post.creator?.charAt(0)?.toUpperCase() || 'U' }}
+              </div>
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-medium text-gray-900">{{ post.creator }}</p>
+              <p class="text-sm text-gray-500">{{ post.createdAt | date:'medium' }}</p>
+              <p class="mt-2 text-gray-700">{{ post.content }}</p>
+              <div class="mt-3 flex items-center space-x-6">
+                <span class="flex items-center text-sm text-gray-500">
+                  <svg class="w-4 h-4 mr-1 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clip-rule="evenodd" />
+                  </svg>
+                  {{ post.likesCount || 0 }}
+                </span>
+                <span class="flex items-center text-sm text-gray-500">
+                  <svg class="w-4 h-4 mr-1 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                  </svg>
+                  {{ post.commentsCount || 0 }}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div *ngIf="myPosts.length === 0" class="text-center py-12 bg-white rounded-xl shadow-sm border border-gray-100">
+          <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+          </svg>
+          <h3 class="mt-2 text-sm font-medium text-gray-900">No posts yet</h3>
+          <p class="mt-1 text-sm text-gray-500">Share your thoughts with the community.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Impact Stats Tab -->
+    <div *ngIf="isActiveTab('impact')" class="space-y-6">
+      <h2 class="text-2xl font-bold text-gray-900">Impact Statistics</h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg p-8 text-white">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-blue-100 text-sm font-medium">Total Event Attendees</p>
+              <p class="text-4xl font-bold mt-2">{{ totalAttendees | number }}</p>
+            </div>
+            <div class="bg-white/20 rounded-full p-4">
+              <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-lg p-8 text-white">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-green-100 text-sm font-medium">Total Funds Raised</p>
+              <p class="text-4xl font-bold mt-2">${{ totalFundsRaised | number }}</p>
+            </div>
+            <div class="bg-white/20 rounded-full p-4">
+              <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599-1M12 8V7m0 1v8m0 0v8m0-6c2 0 1.998-1.586 4-5.143V8c0-3.557-2-6.143-4-6.143z" />
+              </svg>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="bg-white rounded-xl shadow-md p-6 border border-gray-100">
+          <div class="flex items-center">
+            <div class="bg-indigo-100 rounded-full p-3">
+              <svg class="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
+              </svg>
+            </div>
+            <div class="ml-4">
+              <p class="text-sm text-gray-500">Active Campaigns</p>
+              <p class="text-2xl font-bold text-gray-900">{{ myCampaigns.length }}</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-md p-6 border border-gray-100">
+          <div class="flex items-center">
+            <div class="bg-yellow-100 rounded-full p-3">
+              <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+            </div>
+            <div class="ml-4">
+              <p class="text-sm text-gray-500">Events Organized</p>
+              <p class="text-2xl font-bold text-gray-900">{{ myEvents.length }}</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-md p-6 border border-gray-100">
+          <div class="flex items-center">
+            <div class="bg-green-100 rounded-full p-3">
+              <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+            </div>
+            <div class="ml-4">
+              <p class="text-sm text-gray-500">Projects Created</p>
+              <p class="text-2xl font-bold text-gray-900">{{ myProjects.length }}</p>
+            </div>
           </div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Dashboard Content -->
-  <div *ngIf="!isLoading && !error" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
-    <!-- Stats Grid -->
-    <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-      <div class="bg-white overflow-hidden shadow rounded-lg">
-        <div class="p-5">
-          <div class="flex items-center">
-            <div class="flex-shrink-0 bg-indigo-500 rounded-md p-3">
-              <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-6a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-              </svg>
+  <!-- CITIZEN/PARTICIPANT/AMBASSADOR TABS CONTENT -->
+  <div *ngIf="!isLoading && !error && !isDonor()" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+    <!-- Feed Tab -->
+    <div *ngIf="isActiveTab('feed')" class="space-y-6">
+      <h2 class="text-2xl font-bold text-gray-900">Feed</h2>
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="space-y-4">
+          <h3 class="text-lg font-semibold text-indigo-900 flex items-center">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
+            </svg>
+            Latest Campaigns
+          </h3>
+          <div *ngFor="let campaign of feedCampaigns | slice:0:3" class="bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow border border-gray-100 p-5">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-medium text-indigo-600 bg-indigo-50 px-2 py-1 rounded">{{ campaign.type }}</span>
+              <span class="text-xs text-gray-400">{{ campaign.voteCount || 0 }} votes</span>
             </div>
-            <div class="ml-5 w-0 flex-1">
-              <dl>
-                <dt class="text-sm font-medium text-gray-500 truncate">Total Users</dt>
-                <dd class="text-lg font-medium text-gray-900">
-                  {{ (dashboardStats$ | async)?.totalUsers || 0 }}
-                </dd>
-              </dl>
+            <h4 class="font-semibold text-gray-900">{{ campaign.name }}</h4>
+            <p class="text-sm text-gray-600 mt-1 line-clamp-2">{{ campaign.description }}</p>
+            <a [routerLink]="['/campaigns', campaign.id]" class="mt-3 text-sm text-indigo-600 hover:text-indigo-800 font-medium">View details →</a>
+          </div>
+        </div>
+
+        <div class="space-y-4">
+          <h3 class="text-lg font-semibold text-yellow-900 flex items-center">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            Upcoming Events
+          </h3>
+          <div *ngFor="let event of feedEvents | slice:0:3" class="bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow border border-gray-100 p-5">
+            <div class="flex items-center justify-between mb-2">
+              <span [class]="getEventStatusColor(event.status) + ' text-xs px-2 py-1 rounded'">{{ event.status }}</span>
+              <span class="text-xs text-gray-400">{{ event.currentParticipants || 0 }} attending</span>
             </div>
+            <h4 class="font-semibold text-gray-900">{{ event.title }}</h4>
+            <p class="text-sm text-gray-600 mt-1">{{ event.date | date:'mediumDate' }} • {{ event.location }}</p>
+            <a [routerLink]="['/events', event.id]" class="mt-3 text-sm text-yellow-600 hover:text-yellow-800 font-medium">Join event →</a>
           </div>
         </div>
       </div>
 
-      <div class="bg-white overflow-hidden shadow rounded-lg">
-        <div class="p-5">
-          <div class="flex items-center">
-            <div class="flex-shrink-0 bg-green-500 rounded-md p-3">
-              <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
+      <div class="mt-8">
+        <h3 class="text-lg font-semibold text-green-900 flex items-center mb-4">
+          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+          Projects to Fund
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div *ngFor="let project of feedProjects | slice:0:6" class="bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow border border-gray-100 p-5">
+            <h4 class="font-semibold text-gray-900">{{ project.title }}</h4>
+            <div class="mt-3">
+              <div class="flex justify-between text-sm mb-1">
+                <span class="text-gray-600">${{ project.currentAmount | number }}</span>
+                <span class="text-gray-900">of ${{ project.goalAmount | number }}</span>
+              </div>
+              <div class="w-full bg-gray-200 rounded-full h-2">
+                <div class="bg-green-500 h-2 rounded-full" [style.width.%]="getProjectProgress(project)"></div>
+              </div>
+              <p class="text-xs text-gray-500 mt-1">{{ getProjectProgress(project) }}% funded</p>
             </div>
-            <div class="ml-5 w-0 flex-1">
-              <dl>
-                <dt class="text-sm font-medium text-gray-500 truncate">Active Campaigns</dt>
-                <dd class="text-lg font-medium text-gray-900">
-                  {{ ((dashboardStats$ | async)?.totalCampaignsByStatus || {})['ACTIVE'] || 0 }}
-                </dd>
-              </dl>
-            </div>
+            <a [routerLink]="['/projects', project.id]" class="mt-3 block text-sm text-green-600 hover:text-green-800 font-medium">Fund this project →</a>
           </div>
         </div>
       </div>
+    </div>
 
-      <div class="bg-white overflow-hidden shadow rounded-lg">
-        <div class="p-5">
-          <div class="flex items-center">
-            <div class="flex-shrink-0 bg-yellow-500 rounded-md p-3">
-              <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599-1M12 8V7m0 1v8m0 0v8m0-6c2 0 1.998-1.586 4-5.143V8c0-3.557-2-6.143-4-6.143z" />
-              </svg>
+    <!-- My Posts Tab (Citizen) -->
+    <div *ngIf="isActiveTab('posts')" class="space-y-6">
+      <div class="flex items-center justify-between">
+        <h2 class="text-2xl font-bold text-gray-900">My Posts</h2>
+        <a routerLink="/posts/create" class="inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700">
+          <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+          </svg>
+          New Post
+        </a>
+      </div>
+      <div class="space-y-4">
+        <div *ngFor="let post of myPosts" class="bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow border border-gray-100 p-6">
+          <div class="flex items-start space-x-4">
+            <div class="flex-shrink-0">
+              <div class="h-10 w-10 rounded-full bg-gradient-to-r from-indigo-400 to-purple-500 flex items-center justify-center text-white font-medium">
+                {{ post.creator?.charAt(0)?.toUpperCase() || 'U' }}
+              </div>
             </div>
-            <div class="ml-5 w-0 flex-1">
-              <dl>
-                <dt class="text-sm font-medium text-gray-500 truncate">Total Funding</dt>
-                <dd class="text-lg font-medium text-gray-900">
-                  ${{ (dashboardStats$ | async)?.totalFundingAmount?.toLocaleString() || 0 }}
-                </dd>
-              </dl>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-medium text-gray-900">{{ post.creator }}</p>
+              <p class="text-sm text-gray-500">{{ post.createdAt | date:'medium' }}</p>
+              <p class="mt-2 text-gray-700">{{ post.content }}</p>
+              <div class="mt-3 flex items-center space-x-6">
+                <span class="flex items-center text-sm text-gray-500">
+                  <svg class="w-4 h-4 mr-1 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clip-rule="evenodd" />
+                  </svg>
+                  {{ post.likesCount || 0 }}
+                </span>
+                <span class="flex items-center text-sm text-gray-500">
+                  <svg class="w-4 h-4 mr-1 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                  </svg>
+                  {{ post.commentsCount || 0 }}
+                </span>
+              </div>
             </div>
           </div>
         </div>
+        <div *ngIf="myPosts.length === 0" class="text-center py-12 bg-white rounded-xl shadow-sm border border-gray-100">
+          <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+          </svg>
+          <h3 class="mt-2 text-sm font-medium text-gray-900">No posts yet</h3>
+          <p class="mt-1 text-sm text-gray-500">Share your thoughts with the community.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- My Participations Tab -->
+    <div *ngIf="isActiveTab('participations')" class="space-y-6">
+      <h2 class="text-2xl font-bold text-gray-900">My Event Participations</h2>
+      <div class="space-y-4">
+        <div *ngFor="let participation of myParticipations" class="bg-white rounded-xl shadow-md border border-gray-100 p-6">
+          <div class="flex items-center justify-between">
+            <div>
+              <h3 class="text-lg font-semibold text-gray-900">{{ participation.event.title }}</h3>
+              <p class="text-sm text-gray-500 mt-1">{{ participation.event.date | date:'fullDate' }}</p>
+            </div>
+            <div class="text-right">
+              <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Attended
+              </span>
+              <p class="text-xs text-gray-500 mt-1">{{ participation.attendedAt | date:'mediumDate' }}</p>
+            </div>
+          </div>
+        </div>
+        <div *ngIf="myParticipations.length === 0" class="text-center py-12 bg-white rounded-xl shadow-sm border border-gray-100">
+          <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <h3 class="mt-2 text-sm font-medium text-gray-900">No participations yet</h3>
+          <p class="mt-1 text-sm text-gray-500">Join events to track your participation.</p>
+        </div>
       </div>
 
-      <div class="bg-white overflow-hidden shadow rounded-lg">
-        <div class="p-5">
-          <div class="flex items-center">
-            <div class="flex-shrink-0 bg-blue-500 rounded-md p-3">
-              <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7m9 13l-3-3m0 0l-3 3m3-3v8m0-6l3-3m-3 6h3m-3-6h3" />
-              </svg>
+      <div class="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl shadow-lg p-6 text-white">
+        <h3 class="text-lg font-semibold mb-4">Your Badge Progress</h3>
+        <div class="flex items-center space-x-4">
+          <app-badge [badge]="getUserBadge()" [awardedDate]="getAwardedDate()" size="lg"></app-badge>
+          <div class="flex-1">
+            <div class="flex justify-between text-sm mb-1">
+              <span>{{ getUserPoints() }} events attended</span>
+              <span>{{ getNextBadgeThreshold() }} for {{ getBadgeLabel(getNextBadge()) }}</span>
             </div>
-            <div class="ml-5 w-0 flex-1">
-              <dl>
-                <dt class="text-sm font-medium text-gray-500 truncate">Total Events</dt>
-                <dd class="text-lg font-medium text-gray-900">
-                  {{ (dashboardStats$ | async)?.totalEvents || 0 }}
-                </dd>
-              </dl>
+            <div class="w-full bg-white/30 rounded-full h-3">
+              <div class="bg-white h-3 rounded-full transition-all" [style.width.%]="getBadgeProgressPercent()"></div>
             </div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- User Type Distribution -->
-    <div class="mt-8">
-      <h3 class="text-lg leading-6 font-medium text-gray-900">User Distribution by Type</h3>
-      <div class="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-        <div class="bg-white p-6 rounded-lg shadow">
-          <div class="flex items-center">
-            <div class="flex-shrink-0">
-              <div class="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center">
-                <span class="text-indigo-600 font-medium">A</span>
+    <!-- My Funding Tab -->
+    <div *ngIf="isActiveTab('funding')" class="space-y-6">
+      <h2 class="text-2xl font-bold text-gray-900">My Funding History</h2>
+      <div class="space-y-4">
+        <div *ngFor="let funding of myFundingHistory" class="bg-white rounded-xl shadow-md border border-gray-100 p-6">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-4">
+              <div class="bg-green-100 rounded-full p-3">
+                <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599-1M12 8V7m0 1v8m0 0v8m0-6c2 0 1.998-1.586 4-5.143V8c0-3.557-2-6.143-4-6.143z" />
+                </svg>
+              </div>
+              <div>
+                <h3 class="text-lg font-semibold text-gray-900">{{ funding.projectTitle }}</h3>
+                <p class="text-sm text-gray-500">{{ funding.fundDate | date:'mediumDate' }}</p>
               </div>
             </div>
-            <div class="ml-4">
-              <h4 class="text-lg font-medium text-gray-900">Ambassadors</h4>
-              <p class="mt-1 text-sm text-gray-500">{{ ((dashboardStats$ | async)?.totalUsersByType || {})['AMBASSADOR'] || 0 }}</p>
+            <div class="text-right">
+              <p class="text-2xl font-bold text-green-600">${{ funding.amount | number }}</p>
             </div>
           </div>
         </div>
-
-        <div class="bg-white p-6 rounded-lg shadow">
-          <div class="flex items-center">
-            <div class="flex-shrink-0">
-              <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-                <span class="text-green-600 font-medium">D</span>
-              </div>
-            </div>
-            <div class="ml-4">
-              <h4 class="text-lg font-medium text-gray-900">Donors</h4>
-              <p class="mt-1 text-sm text-gray-500">{{ ((dashboardStats$ | async)?.totalUsersByType || {})['DONOR'] || 0 }}</p>
-            </div>
-          </div>
-        </div>
-
-        <div class="bg-white p-6 rounded-lg shadow">
-          <div class="flex items-center">
-            <div class="flex-shrink-0">
-              <div class="w-8 h-8 bg-yellow-100 rounded-full flex items-center justify-center">
-                <span class="text-yellow-600 font-medium">C</span>
-              </div>
-            </div>
-            <div class="ml-4">
-              <h4 class="text-lg font-medium text-gray-900">Citizens</h4>
-              <p class="mt-1 text-sm text-gray-500">{{ ((dashboardStats$ | async)?.totalUsersByType || {})['CITIZEN'] || 0 }}</p>
-            </div>
-          </div>
-        </div>
-
-        <div class="bg-white p-6 rounded-lg shadow">
-          <div class="flex items-center">
-            <div class="flex-shrink-0">
-              <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                <span class="text-blue-600 font-medium">P</span>
-              </div>
-            </div>
-            <div class="ml-4">
-              <h4 class="text-lg font-medium text-gray-900">Participants</h4>
-              <p class="mt-1 text-sm text-gray-500">{{ ((dashboardStats$ | async)?.totalUsersByType || {})['PARTICIPANT'] || 0 }}</p>
-            </div>
-          </div>
+        <div *ngIf="myFundingHistory.length === 0" class="text-center py-12 bg-white rounded-xl shadow-sm border border-gray-100">
+          <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599-1M12 8V7m0 1v8m0 0v8m0-6c2 0 1.998-1.586 4-5.143V8c0-3.557-2-6.143-4-6.143z" />
+          </svg>
+          <h3 class="mt-2 text-sm font-medium text-gray-900">No funding yet</h3>
+          <p class="mt-1 text-sm text-gray-500">Support projects that matter to you.</p>
         </div>
       </div>
     </div>
 
-    <!-- Impact Metrics -->
-    <div class="mt-8">
-      <h3 class="text-lg leading-6 font-medium text-gray-900">Impact Metrics</h3>
-      <div class="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-        <div class="bg-white p-6 rounded-lg shadow">
-          <h4 class="text-lg font-medium text-gray-900">CO₂ Saved</h4>
-          <p class="mt-2 text-3xl font-bold text-green-600">{{ (dashboardStats$ | async)?.totalCo2Saved || 0 }} kg</p>
-        </div>
+    <!-- My Badge Tab -->
+    <div *ngIf="isActiveTab('badge')" class="space-y-6">
+      <h2 class="text-2xl font-bold text-gray-900">My Badge</h2>
 
-        <div class="bg-white p-6 rounded-lg shadow">
-          <h4 class="text-lg font-medium text-gray-900">Meals Distributed</h4>
-          <p class="mt-2 text-3xl font-bold text-blue-600">{{ (dashboardStats$ | async)?.totalMealsDistributed || 0 }}</p>
+      <div class="bg-gradient-to-br from-yellow-400 via-yellow-500 to-orange-500 rounded-2xl shadow-xl p-8 text-white">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-yellow-100 text-sm font-medium">Current Badge</p>
+            <h3 class="text-4xl font-bold mt-2">{{ getBadgeLabel(getUserBadge()) }}</h3>
+            <p *ngIf="getAwardedDate()" class="text-yellow-100 mt-2">Awarded on {{ getAwardedDate() | date:'longDate' }}</p>
+          </div>
+          <div class="bg-white/20 rounded-full p-6">
+            <app-badge [badge]="getUserBadge()" size="xl"></app-badge>
+          </div>
         </div>
+      </div>
 
-        <div class="bg-white p-6 rounded-lg shadow">
-          <h4 class="text-lg font-medium text-gray-900">Most Active Region</h4>
-          <p class="mt-2 text-xl font-bold text-indigo-600">{{ (dashboardStats$ | async)?.mostActiveRegion || 'N/A' }}</p>
+      <div class="bg-white rounded-xl shadow-md border border-gray-100 p-6">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">Badge Progress</h3>
+        <div class="space-y-4">
+          <div class="flex items-center space-x-4">
+            <app-badge badge="NONE" size="sm"></app-badge>
+            <div class="flex-1 h-2 bg-gray-200 rounded-full">
+              <div class="h-full bg-gray-400 rounded-full" [style.width.%]="getUserPoints() >= 0 ? 100 : 0"></div>
+            </div>
+          </div>
+          <div class="flex items-center space-x-4">
+            <app-badge badge="BRONZE" size="sm"></app-badge>
+            <div class="flex-1 h-2 bg-gray-200 rounded-full">
+              <div class="h-full bg-amber-600 rounded-full" [style.width.%]="getUserPoints() >= 1 ? 100 : (getUserPoints() / 1) * 100"></div>
+            </div>
+          </div>
+          <div class="flex items-center space-x-4">
+            <app-badge badge="SILVER" size="sm"></app-badge>
+            <div class="flex-1 h-2 bg-gray-200 rounded-full">
+              <div class="h-full bg-gray-400 rounded-full" [style.width.%]="getUserPoints() >= 3 ? 100 : (getUserPoints() / 3) * 100"></div>
+            </div>
+          </div>
+          <div class="flex items-center space-x-4">
+            <app-badge badge="GOLD" size="sm"></app-badge>
+            <div class="flex-1 h-2 bg-gray-200 rounded-full">
+              <div class="h-full bg-yellow-400 rounded-full" [style.width.%]="getUserPoints() >= 5 ? 100 : (getUserPoints() / 5) * 100"></div>
+            </div>
+          </div>
+          <div class="flex items-center space-x-4">
+            <app-badge badge="PLATINUM" size="sm"></app-badge>
+            <div class="flex-1 h-2 bg-gray-200 rounded-full">
+              <div class="h-full bg-indigo-300 rounded-full" [style.width.%]="getUserPoints() >= 8 ? 100 : (getUserPoints() / 8) * 100"></div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

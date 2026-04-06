@@ -3,6 +3,9 @@ package com.civicplatform.controller;
 import com.civicplatform.dto.request.ProjectFundingRequest;
 import com.civicplatform.dto.request.ProjectRequest;
 import com.civicplatform.dto.response.ProjectResponse;
+import com.civicplatform.entity.User;
+import com.civicplatform.enums.UserType;
+import com.civicplatform.repository.UserRepository;
 import com.civicplatform.service.ProjectService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -10,6 +13,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -23,11 +27,16 @@ import java.util.List;
 public class ProjectController {
 
     private final ProjectService projectService;
+    private final UserRepository userRepository;
 
     @Operation(summary = "Create a new project")
     @PostMapping
     public ResponseEntity<ProjectResponse> createProject(@Valid @RequestBody ProjectRequest projectRequest, Authentication authentication) {
-        Long userId = getUserIdFromAuthentication(authentication);
+        User user = getUserFromAuthentication(authentication);
+        if (user.getUserType() != UserType.DONOR && user.getUserType() != UserType.AMBASSADOR) {
+            throw new AccessDeniedException("Only DONOR and AMBASSADOR users can create projects");
+        }
+        Long userId = user.getId();
         ProjectResponse response = projectService.createProject(projectRequest, userId);
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
@@ -95,8 +104,12 @@ public class ProjectController {
     }
 
     private Long getUserIdFromAuthentication(Authentication authentication) {
-        // This is a placeholder - you'll need to implement proper user ID extraction
-        // from the authentication object
-        return 1L; // Placeholder
+        return getUserFromAuthentication(authentication).getId();
+    }
+
+    private User getUserFromAuthentication(Authentication authentication) {
+        String email = authentication.getName();
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Authenticated user not found"));
     }
 }

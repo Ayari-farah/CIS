@@ -2,7 +2,9 @@ package com.civicplatform.controller;
 
 import com.civicplatform.dto.request.PostRequest;
 import com.civicplatform.dto.response.PostResponse;
+import com.civicplatform.entity.User;
 import com.civicplatform.enums.PostStatus;
+import com.civicplatform.repository.UserRepository;
 import com.civicplatform.service.PostService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -23,6 +25,7 @@ import java.util.List;
 public class PostController {
 
     private final PostService postService;
+    private final UserRepository userRepository;
 
     @Operation(summary = "Create a new post")
     @PostMapping
@@ -79,7 +82,7 @@ public class PostController {
 
     @Operation(summary = "Approve post")
     @PostMapping("/{id}/approve")
-    @PreAuthorize("hasRole('MODERATOR') or hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<PostResponse> approvePost(@PathVariable Long id) {
         PostResponse response = postService.approvePost(id);
         return ResponseEntity.ok(response);
@@ -87,15 +90,16 @@ public class PostController {
 
     @Operation(summary = "Reject post")
     @PostMapping("/{id}/reject")
-    @PreAuthorize("hasRole('MODERATOR') or hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<PostResponse> rejectPost(@PathVariable Long id) {
         PostResponse response = postService.rejectPost(id);
         return ResponseEntity.ok(response);
     }
 
     private Long getUserIdFromAuthentication(Authentication authentication) {
-        // This is a placeholder - you'll need to implement proper user ID extraction
-        // from the authentication object
-        return 1L; // Placeholder
+        String email = authentication.getName();
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Authenticated user not found"));
+        return user.getId();
     }
 }

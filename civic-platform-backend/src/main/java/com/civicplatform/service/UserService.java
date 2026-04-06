@@ -1,5 +1,6 @@
 package com.civicplatform.service;
 
+import com.civicplatform.dto.request.ProfileUpdateRequest;
 import com.civicplatform.dto.request.UserRequest;
 import com.civicplatform.dto.response.UserResponse;
 import com.civicplatform.enums.UserType;
@@ -13,6 +14,7 @@ public interface UserService {
     List<UserResponse> getAllUsers();
     List<UserResponse> getUsersByType(UserType userType);
     UserResponse updateUser(Long id, UserRequest userRequest);
+    UserResponse updateProfile(Long id, ProfileUpdateRequest request);
     void deleteUser(Long id);
     void promoteToAmbassador(Long userId);
     long countUsersByType(UserType userType);

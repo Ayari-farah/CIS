@@ -1,10 +1,9 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
-import { Router, RouterModule } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { AuthService } from '@core/services/auth.service';
-import { RegisterRequest } from '@core/models/auth.models';
-import { UserType, Role } from '@core/models/auth.models';
+import { RegisterRequest, UserType } from '@core/models/auth.models';
 
 @Component({
   selector: 'app-register',
@@ -14,32 +13,73 @@ import { UserType, Role } from '@core/models/auth.models';
   styleUrls: ['./register.component.scss']
 })
 export class RegisterComponent {
+  step: 1 | 2 = 1;
+  userType: 'CITIZEN' | 'DONOR' | null = null;
+  
   registerForm: FormGroup;
   isLoading = false;
   errorMessage = '';
   showPassword = false;
-  userTypes = Object.values(UserType);
-  roles = Object.values(Role);
+  private returnUrl = '/dashboard';
 
   constructor(
     private fb: FormBuilder,
     private authService: AuthService,
-    private router: Router
+    private router: Router,
+    private route: ActivatedRoute
   ) {
+    this.returnUrl = this.route.snapshot.queryParamMap.get('returnUrl') || '/dashboard';
     this.registerForm = this.fb.group({
       userName: ['', [Validators.required, Validators.minLength(3)]],
       email: ['', [Validators.required, Validators.email]],
       password: ['', [Validators.required, Validators.minLength(6)]],
-      userType: [UserType.CITIZEN, [Validators.required]],
-      role: [Role.USER],
-      firstName: [''],
-      lastName: [''],
-      phone: ['']
+      firstName: ['', Validators.required],
+      lastName: ['', Validators.required],
+      phone: ['', Validators.required],
+      address: ['', Validators.required],
+      birthDate: [''],
+      companyName: [''],
+      associationName: [''],
+      contactName: [''],
+      contactEmail: ['', Validators.email]
     });
   }
 
+  selectUserType(type: 'CITIZEN' | 'DONOR'): void {
+    this.userType = type;
+    this.step = 2;
+    this.errorMessage = '';
+    
+    if (type === UserType.DONOR) {
+      this.registerForm.get('associationName')?.setValidators([Validators.required]);
+      this.registerForm.get('companyName')?.setValidators([Validators.required]);
+      this.registerForm.get('contactName')?.setValidators([Validators.required]);
+      this.registerForm.get('contactEmail')?.setValidators([Validators.required, Validators.email]);
+      this.registerForm.get('birthDate')?.clearValidators();
+    } else {
+      this.registerForm.get('associationName')?.clearValidators();
+      this.registerForm.get('companyName')?.clearValidators();
+      this.registerForm.get('contactName')?.clearValidators();
+      this.registerForm.get('contactEmail')?.setValidators([Validators.email]);
+      this.registerForm.get('birthDate')?.setValidators([Validators.required]);
+    }
+    
+    this.registerForm.get('associationName')?.updateValueAndValidity();
+    this.registerForm.get('companyName')?.updateValueAndValidity();
+    this.registerForm.get('contactName')?.updateValueAndValidity();
+    this.registerForm.get('contactEmail')?.updateValueAndValidity();
+    this.registerForm.get('birthDate')?.updateValueAndValidity();
+  }
+
+  goBack(): void {
+    this.step = 1;
+    this.userType = null;
+    this.errorMessage = '';
+    this.registerForm.reset();
+  }
+
   onSubmit(): void {
-    if (this.registerForm.invalid) {
+    if (this.registerForm.invalid || !this.userType) {
       this.registerForm.markAllAsTouched();
       return;
     }
@@ -47,20 +87,29 @@ export class RegisterComponent {
     this.isLoading = true;
     this.errorMessage = '';
 
+    const formValue = this.registerForm.value;
+    
     const registerRequest: RegisterRequest = {
-      userName: this.registerForm.value.userName!,
-      email: this.registerForm.value.email!,
-      password: this.registerForm.value.password!,
-      userType: this.registerForm.value.userType!,
-      role: this.registerForm.value.role,
-      firstName: this.registerForm.value.firstName,
-      lastName: this.registerForm.value.lastName,
-      phone: this.registerForm.value.phone
+      userName: formValue.userName,
+      email: formValue.email,
+      password: formValue.password,
+      userType: this.userType as UserType.CITIZEN | UserType.DONOR,
+      firstName: formValue.firstName,
+      lastName: formValue.lastName,
+      phone: formValue.phone,
+      address: formValue.address,
+      ...(this.userType === 'CITIZEN' && { birthDate: formValue.birthDate }),
+      ...(this.userType === 'DONOR' && {
+        companyName: formValue.companyName,
+        associationName: formValue.associationName,
+        contactName: formValue.contactName,
+        contactEmail: formValue.contactEmail
+      })
     };
 
     this.authService.register(registerRequest).subscribe({
       next: () => {
-        this.router.navigate(['/dashboard']);
+        this.router.navigateByUrl(this.returnUrl);
       },
       error: (error) => {
         console.error('Register error:', error);
@@ -93,5 +142,13 @@ export class RegisterComponent {
   get userName() { return this.registerForm.get('userName'); }
   get email() { return this.registerForm.get('email'); }
   get password() { return this.registerForm.get('password'); }
-  get userType() { return this.registerForm.get('userType'); }
+  get firstName() { return this.registerForm.get('firstName'); }
+  get lastName() { return this.registerForm.get('lastName'); }
+  get phone() { return this.registerForm.get('phone'); }
+  get address() { return this.registerForm.get('address'); }
+  get birthDate() { return this.registerForm.get('birthDate'); }
+  get associationName() { return this.registerForm.get('associationName'); }
+  get companyName() { return this.registerForm.get('companyName'); }
+  get contactName() { return this.registerForm.get('contactName'); }
+  get contactEmail() { return this.registerForm.get('contactEmail'); }
 }

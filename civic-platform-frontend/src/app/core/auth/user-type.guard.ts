@@ -2,11 +2,12 @@ import { Injectable } from '@angular/core';
 import { CanActivate, ActivatedRouteSnapshot, RouterStateSnapshot, Router } from '@angular/router';
 import { Observable } from 'rxjs';
 import { AuthService } from '../services/auth.service';
+import { UserType } from '../models/auth.models';
 
 @Injectable({
   providedIn: 'root'
 })
-export class RoleGuard implements CanActivate {
+export class UserTypeGuard implements CanActivate {
 
   constructor(private authService: AuthService, private router: Router) {}
 
@@ -15,8 +16,7 @@ export class RoleGuard implements CanActivate {
     state: RouterStateSnapshot
   ): Observable<boolean> | Promise<boolean> | boolean {
     
-    const requiredRoles = route.data['roles'] as string[];
-    
+    // Check if user is logged in
     if (!this.authService.isLoggedIn()) {
       this.router.navigate(['/login'], { 
         queryParams: { returnUrl: state.url } 
@@ -24,11 +24,14 @@ export class RoleGuard implements CanActivate {
       return false;
     }
 
-    if (requiredRoles && requiredRoles.length > 0) {
-      const hasRequiredRole = this.authService.hasAnyRole(requiredRoles);
+    // Get allowed user types from route data
+    const allowedUserTypes = route.data['userTypes'] as UserType[];
+    
+    if (allowedUserTypes && allowedUserTypes.length > 0) {
+      const currentUser = this.authService.getCurrentUser();
       
-      if (!hasRequiredRole) {
-        this.router.navigate(['/dashboard'], { queryParams: { unauthorized: 'role' } });
+      if (!currentUser || !allowedUserTypes.includes(currentUser.userType)) {
+        this.router.navigate(['/dashboard'], { queryParams: { unauthorized: 'user-type' } });
         return false;
       }
     }

@@ -1,5 +1,6 @@
 package com.civicplatform.controller;
 
+import com.civicplatform.dto.request.ProfileUpdateRequest;
 import com.civicplatform.dto.request.UserRequest;
 import com.civicplatform.dto.response.UserResponse;
 import com.civicplatform.enums.UserType;
@@ -11,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -61,9 +63,27 @@ public class UserController {
 
     @Operation(summary = "Update user")
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN') or #id == authentication.principal.id")
-    public ResponseEntity<UserResponse> updateUser(@PathVariable Long id, @Valid @RequestBody UserRequest userRequest) {
+    public ResponseEntity<UserResponse> updateUser(@PathVariable Long id, @RequestBody UserRequest userRequest, Authentication authentication) {
+        UserResponse current = userService.getUserById(id);
+        boolean isAdmin = authentication.getAuthorities().stream()
+                .anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority()));
+        if (!isAdmin && !authentication.getName().equalsIgnoreCase(current.getEmail())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
         UserResponse response = userService.updateUser(id, userRequest);
+        return ResponseEntity.ok(response);
+    }
+
+    @Operation(summary = "Update user profile")
+    @PutMapping("/{id}/profile")
+    public ResponseEntity<UserResponse> updateProfile(@PathVariable Long id, @Valid @RequestBody ProfileUpdateRequest request, Authentication authentication) {
+        UserResponse current = userService.getUserById(id);
+        boolean isAdmin = authentication.getAuthorities().stream()
+                .anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority()));
+        if (!isAdmin && !authentication.getName().equalsIgnoreCase(current.getEmail())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        UserResponse response = userService.updateProfile(id, request);
         return ResponseEntity.ok(response);
     }
 

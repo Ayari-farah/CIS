@@ -1,5 +1,6 @@
 package com.civicplatform.service.impl;
 
+import com.civicplatform.dto.request.ProfileUpdateRequest;
 import com.civicplatform.dto.request.UserRequest;
 import com.civicplatform.dto.response.UserResponse;
 import com.civicplatform.entity.User;
@@ -70,8 +71,53 @@ public class UserServiceImpl implements UserService {
     public UserResponse updateUser(Long id, UserRequest userRequest) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("User not found with id: " + id));
-        
-        userMapper.updateEntity(userRequest, user);
+
+        if (userRequest.getEmail() != null && !userRequest.getEmail().equalsIgnoreCase(user.getEmail())
+                && userRepository.existsByEmail(userRequest.getEmail())) {
+            throw new RuntimeException("Email already exists");
+        }
+        if (userRequest.getUserName() != null && !userRequest.getUserName().equalsIgnoreCase(user.getUserName())
+                && userRepository.existsByUserName(userRequest.getUserName())) {
+            throw new RuntimeException("Username already exists");
+        }
+
+        if (userRequest.getUserName() != null) user.setUserName(userRequest.getUserName());
+        if (userRequest.getEmail() != null) user.setEmail(userRequest.getEmail());
+        if (userRequest.getFirstName() != null) user.setFirstName(userRequest.getFirstName());
+        if (userRequest.getLastName() != null) user.setLastName(userRequest.getLastName());
+        if (userRequest.getPhone() != null) user.setPhone(userRequest.getPhone());
+        if (userRequest.getAddress() != null) user.setAddress(userRequest.getAddress());
+        if (userRequest.getCompanyName() != null) user.setCompanyName(userRequest.getCompanyName());
+        if (userRequest.getAssociationName() != null) user.setAssociationName(userRequest.getAssociationName());
+        if (userRequest.getContactName() != null) user.setContactName(userRequest.getContactName());
+        if (userRequest.getContactEmail() != null) user.setContactEmail(userRequest.getContactEmail());
+        if (userRequest.getBirthDate() != null && !userRequest.getBirthDate().isBlank()) {
+            user.setBirthDate(LocalDate.parse(userRequest.getBirthDate()));
+        }
+
+        user = userRepository.save(user);
+        return userMapper.toResponse(user);
+    }
+
+    @Override
+    @Transactional
+    public UserResponse updateProfile(Long id, ProfileUpdateRequest request) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found with id: " + id));
+
+        // Only update profile fields - never touch userName, email, role, userType, badge, points
+        if (request.getFirstName() != null) user.setFirstName(request.getFirstName());
+        if (request.getLastName() != null) user.setLastName(request.getLastName());
+        if (request.getPhone() != null) user.setPhone(request.getPhone());
+        if (request.getAddress() != null) user.setAddress(request.getAddress());
+        if (request.getCompanyName() != null) user.setCompanyName(request.getCompanyName());
+        if (request.getAssociationName() != null) user.setAssociationName(request.getAssociationName());
+        if (request.getContactName() != null) user.setContactName(request.getContactName());
+        if (request.getContactEmail() != null) user.setContactEmail(request.getContactEmail());
+        if (request.getBirthDate() != null && !request.getBirthDate().isBlank()) {
+            user.setBirthDate(LocalDate.parse(request.getBirthDate()));
+        }
+
         user = userRepository.save(user);
         return userMapper.toResponse(user);
     }
@@ -101,12 +147,12 @@ public class UserServiceImpl implements UserService {
         }
 
         user.setUserType(UserType.AMBASSADOR);
-        user.setBadge(Badge.COEUR);
+        user.setBadge(Badge.PLATINUM);
         user.setAwardedDate(LocalDate.now());
 
         userRepository.save(user);
         
-        log.info("User {} has been promoted to AMBASSADOR with badge COEUR", user.getEmail());
+        log.info("User {} has been promoted to AMBASSADOR with badge PLATINUM", user.getEmail());
         
         // TODO: Send congratulatory email
     }

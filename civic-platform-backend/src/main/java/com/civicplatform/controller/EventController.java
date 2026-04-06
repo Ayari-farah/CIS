@@ -2,7 +2,10 @@ package com.civicplatform.controller;
 
 import com.civicplatform.dto.request.EventRequest;
 import com.civicplatform.dto.response.EventResponse;
+import com.civicplatform.entity.User;
 import com.civicplatform.enums.EventStatus;
+import com.civicplatform.enums.UserType;
+import com.civicplatform.repository.UserRepository;
 import com.civicplatform.service.EventService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -10,6 +13,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -23,11 +27,16 @@ import java.util.List;
 public class EventController {
 
     private final EventService eventService;
+    private final UserRepository userRepository;
 
     @Operation(summary = "Create a new event")
     @PostMapping
     public ResponseEntity<EventResponse> createEvent(@Valid @RequestBody EventRequest eventRequest, Authentication authentication) {
-        Long userId = getUserIdFromAuthentication(authentication);
+        User user = getUserFromAuthentication(authentication);
+        if (user.getUserType() != UserType.DONOR && user.getUserType() != UserType.AMBASSADOR) {
+            throw new AccessDeniedException("Only DONOR and AMBASSADOR users can create events");
+        }
+        Long userId = user.getId();
         EventResponse response = eventService.createEvent(eventRequest, userId);
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
@@ -115,9 +124,21 @@ public class EventController {
         return ResponseEntity.ok().build();
     }
 
+    @Operation(summary = "Confirm attendance and trigger promotion")
+    @PostMapping("/{id}/attend")
+    public ResponseEntity<Void> confirmAttendance(@PathVariable Long id, Authentication authentication) {
+        Long userId = getUserIdFromAuthentication(authentication);
+        eventService.confirmAttendance(id, userId, false);
+        return ResponseEntity.ok().build();
+    }
+
     private Long getUserIdFromAuthentication(Authentication authentication) {
-        // This is a placeholder - you'll need to implement proper user ID extraction
-        // from the authentication object
-        return 1L; // Placeholder
+        return getUserFromAuthentication(authentication).getId();
+    }
+
+    private User getUserFromAuthentication(Authentication authentication) {
+        String email = authentication.getName();
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Authenticated user not found"));
     }
 }

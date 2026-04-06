@@ -1,6 +1,8 @@
 import { Routes } from '@angular/router';
 import { AuthGuard } from './core/auth/auth.guard';
 import { RoleGuard } from './core/auth/role.guard';
+import { UserTypeGuard } from './core/auth/user-type.guard';
+import { UserType } from './core/models/auth.models';
 
 export const routes: Routes = [
   { path: '', redirectTo: '/dashboard', pathMatch: 'full' },
@@ -33,14 +35,15 @@ export const routes: Routes = [
   },
   
   {
-    path: 'campaigns/:id',
-    loadComponent: () => import('./features/campaigns/campaign-detail/campaign-detail.component').then(m => m.CampaignDetailComponent),
-    canActivate: [AuthGuard]
+    path: 'campaigns/new',
+    loadComponent: () => import('./features/campaigns/campaign-form/campaign-form.component').then(m => m.CampaignFormComponent),
+    canActivate: [AuthGuard, UserTypeGuard],
+    data: { userTypes: [UserType.DONOR, UserType.AMBASSADOR] }
   },
   
   {
-    path: 'campaigns/new',
-    loadComponent: () => import('./features/campaigns/campaign-form/campaign-form.component').then(m => m.CampaignFormComponent),
+    path: 'campaigns/:id',
+    loadComponent: () => import('./features/campaigns/campaign-detail/campaign-detail.component').then(m => m.CampaignDetailComponent),
     canActivate: [AuthGuard]
   },
   
@@ -48,6 +51,13 @@ export const routes: Routes = [
     path: 'events',
     loadComponent: () => import('./features/events/events.component').then(m => m.EventsComponent),
     canActivate: [AuthGuard]
+  },
+  
+  {
+    path: 'events/new',
+    loadComponent: () => import('./features/events/event-form/event-form.component').then(m => m.EventFormComponent),
+    canActivate: [AuthGuard, UserTypeGuard],
+    data: { userTypes: [UserType.DONOR, UserType.AMBASSADOR] }
   },
   
   {
@@ -63,6 +73,13 @@ export const routes: Routes = [
   },
   
   {
+    path: 'projects/new',
+    loadComponent: () => import('./features/projects/project-form/project-form.component').then(m => m.ProjectFormComponent),
+    canActivate: [AuthGuard, UserTypeGuard],
+    data: { userTypes: [UserType.DONOR, UserType.AMBASSADOR] }
+  },
+  
+  {
     path: 'projects/:id',
     loadComponent: () => import('./features/projects/project-detail/project-detail.component').then(m => m.ProjectDetailComponent),
     canActivate: [AuthGuard]
@@ -71,6 +88,12 @@ export const routes: Routes = [
   {
     path: 'posts',
     loadComponent: () => import('./features/posts/posts.component').then(m => m.PostsComponent),
+    canActivate: [AuthGuard]
+  },
+  
+  {
+    path: 'posts/new',
+    loadComponent: () => import('./features/posts/post-form/post-form.component').then(m => m.PostFormComponent),
     canActivate: [AuthGuard]
   },
   
@@ -84,7 +107,7 @@ export const routes: Routes = [
     path: 'metrics',
     loadComponent: () => import('./features/metrics/metrics.component').then(m => m.MetricsComponent),
     canActivate: [AuthGuard, RoleGuard],
-    data: { roles: ['ADMIN', 'MODERATOR'] }
+    data: { roles: ['ADMIN'] }
   },
   
   {

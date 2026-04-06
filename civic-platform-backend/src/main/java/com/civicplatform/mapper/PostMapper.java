@@ -3,6 +3,8 @@ package com.civicplatform.mapper;
 import com.civicplatform.dto.request.PostRequest;
 import com.civicplatform.dto.response.PostResponse;
 import com.civicplatform.entity.Post;
+import com.civicplatform.enums.PostStatus;
+import org.mapstruct.AfterMapping;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
@@ -27,6 +29,16 @@ public interface PostMapper {
     @Mapping(target = "comments", ignore = true)
     @Mapping(target = "likes", ignore = true)
     Post toEntity(PostRequest postRequest);
+    
+    @AfterMapping
+    default void setDefaults(@MappingTarget Post post) {
+        if (post.getStatus() == null) {
+            post.setStatus(PostStatus.PENDING);
+        }
+        if (post.getLikesCount() == null) {
+            post.setLikesCount(0);
+        }
+    }
     
     void updateEntity(PostRequest postRequest, @MappingTarget Post post);
     

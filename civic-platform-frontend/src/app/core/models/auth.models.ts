@@ -7,18 +7,15 @@ export enum UserType {
 
 export enum Role {
   USER = 'USER',
-  ADMIN = 'ADMIN',
-  MODERATOR = 'MODERATOR'
+  ADMIN = 'ADMIN'
 }
 
 export enum Badge {
-  COEUR = 'COEUR',
-  DOR = 'DOR',
-  MOBILISATEUR = 'MOBILISATEUR',
-  PIONNIER = 'PIONNIER',
-  LOCAL = 'LOCAL',
-  REGIONAL = 'REGIONAL',
-  NATIONAL = 'NATIONAL'
+  NONE = 'NONE',
+  BRONZE = 'BRONZE',
+  SILVER = 'SILVER',
+  GOLD = 'GOLD',
+  PLATINUM = 'PLATINUM'
 }
 
 export interface User {
@@ -27,27 +24,23 @@ export interface User {
   email: string;
   userType: UserType;
   role: Role;
+  badge: Badge;
+  points: number;
+  awardedDate?: string;
   createdAt: string;
   
-  // AMBASSADOR fields
-  badge?: Badge;
-  awardedDate?: string;
+  // Profile fields
+  firstName?: string;
+  lastName?: string;
+  phone?: string;
+  address?: string;
+  birthDate?: string;
   
   // DONOR fields
   companyName?: string;
   associationName?: string;
   contactName?: string;
   contactEmail?: string;
-  address?: string;
-  
-  // CITIZEN fields
-  firstName?: string;
-  lastName?: string;
-  phone?: string;
-  birthDate?: string;
-  
-  // PARTICIPANT fields
-  points?: number;
 }
 
 export interface LoginRequest {
@@ -59,27 +52,22 @@ export interface RegisterRequest {
   userName: string;
   email: string;
   password: string;
-  userType: UserType;
-  role?: Role;
+  userType: UserType.CITIZEN | UserType.DONOR;
   
-  // AMBASSADOR fields
-  badge?: Badge;
+  // Common fields
+  firstName: string;
+  lastName: string;
+  phone: string;
+  address: string;
   
-  // DONOR fields
+  // DONOR-specific fields
   companyName?: string;
   associationName?: string;
   contactName?: string;
   contactEmail?: string;
-  address?: string;
   
-  // CITIZEN fields
-  firstName?: string;
-  lastName?: string;
-  phone?: string;
+  // CITIZEN-specific fields
   birthDate?: string;
-  
-  // PARTICIPANT fields
-  points?: number;
 }
 
 export interface RefreshTokenRequest {
@@ -89,9 +77,24 @@ export interface RefreshTokenRequest {
 export interface AuthResponse {
   token: string;
   refreshToken: string;
-  userType: string;
-  role: string;
   userId: number;
   userName: string;
   email: string;
+  userType: UserType;
+  role: Role;
+  badge: Badge;
+  points: number;
+  awardedDate?: string;
+  createdAt: string;
+  
+  // Additional user fields
+  firstName?: string;
+  lastName?: string;
+  phone?: string;
+  address?: string;
+  birthDate?: string;
+  companyName?: string;
+  associationName?: string;
+  contactName?: string;
+  contactEmail?: string;
 }

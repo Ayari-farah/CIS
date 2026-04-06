@@ -13,6 +13,7 @@ import com.civicplatform.repository.EventParticipantRepository;
 import com.civicplatform.repository.EventRepository;
 import com.civicplatform.repository.UserRepository;
 import com.civicplatform.service.EventService;
+import com.civicplatform.service.PromotionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,6 +30,7 @@ public class EventServiceImpl implements EventService {
     private final UserRepository userRepository;
     private final EventParticipantRepository eventParticipantRepository;
     private final EventMapper eventMapper;
+    private final PromotionService promotionService;
 
     @Override
     @Transactional
@@ -138,8 +140,18 @@ public class EventServiceImpl implements EventService {
             throw new EventFullException("Event is full");
         }
 
-        // Check if already registered
-        if (eventParticipantRepository.findByEventIdAndUserId(eventId, userId).isPresent()) {
+        EventParticipant existingParticipant = eventParticipantRepository.findByEventIdAndUserId(eventId, userId).orElse(null);
+        if (existingParticipant != null) {
+            if (existingParticipant.getStatus() == ParticipantStatus.CANCELLED) {
+                existingParticipant.setStatus(ParticipantStatus.REGISTERED);
+                existingParticipant.setRegisteredAt(LocalDateTime.now());
+                existingParticipant.setCheckedInAt(null);
+                existingParticipant.setCompletedAt(null);
+                eventParticipantRepository.save(existingParticipant);
+                event.incrementParticipants();
+                eventRepository.save(event);
+                return;
+            }
             throw new RuntimeException("User is already registered for this event");
         }
 
@@ -184,5 +196,28 @@ public class EventServiceImpl implements EventService {
 
         participant.checkIn();
         eventParticipantRepository.save(participant);
+    }
+
+    @Override
+    @Transactional
+    public void confirmAttendance(Long eventId, Long userId, boolean organizerConfirmation) {
+        EventParticipant participant = eventParticipantRepository.findByEventIdAndUserId(eventId, userId)
+                .orElseThrow(() -> new RuntimeException("User is not registered for this event"));
+
+        if (organizerConfirmation) {
+            if (participant.getStatus() != ParticipantStatus.CHECKED_IN) {
+                throw new RuntimeException("User must be checked in before organizer confirms attendance");
+            }
+        } else if (participant.getStatus() == ParticipantStatus.REGISTERED) {
+            participant.checkIn();
+        } else if (participant.getStatus() != ParticipantStatus.CHECKED_IN) {
+            throw new RuntimeException("Cannot confirm attendance with status: " + participant.getStatus());
+        }
+
+        participant.complete();
+        eventParticipantRepository.save(participant);
+
+        // Trigger promotion logic
+        promotionService.processEventAttendance(userId);
     }
 }

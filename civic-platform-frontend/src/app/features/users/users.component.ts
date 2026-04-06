@@ -52,7 +52,6 @@ export class UsersComponent implements OnInit {
   getRoleColor(role: string): string {
     switch (role) {
       case 'ADMIN': return 'bg-red-100 text-red-800';
-      case 'MODERATOR': return 'bg-yellow-100 text-yellow-800';
       default: return 'bg-green-100 text-green-800';
     }
   }

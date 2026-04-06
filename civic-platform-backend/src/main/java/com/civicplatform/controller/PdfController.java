@@ -26,7 +26,7 @@ public class PdfController {
 
     @Operation(summary = "Generate campaign PDF report")
     @GetMapping("/campaigns/{id}")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('MODERATOR')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<byte[]> generateCampaignReport(@PathVariable Long id) {
         campaignService.getCampaignById(id); // Verify campaign exists
         ByteArrayOutputStream pdfStream = pdfService.generateCampaignReport(
@@ -46,7 +46,7 @@ public class PdfController {
 
     @Operation(summary = "Generate project PDF report")
     @GetMapping("/projects/{id}")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('MODERATOR')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<byte[]> generateProjectReport(@PathVariable Long id) {
         projectService.getProjectById(id); // Verify project exists
         ByteArrayOutputStream pdfStream = pdfService.generateProjectReport(

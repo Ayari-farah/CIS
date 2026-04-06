@@ -1,6 +1,8 @@
 package com.civicplatform.controller;
 
 import com.civicplatform.service.LikeService;
+import com.civicplatform.entity.User;
+import com.civicplatform.repository.UserRepository;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -15,6 +17,7 @@ import org.springframework.web.bind.annotation.*;
 public class LikeController {
 
     private final LikeService likeService;
+    private final UserRepository userRepository;
 
     @Operation(summary = "Like a post")
     @PostMapping("/posts/{postId}")
@@ -48,8 +51,9 @@ public class LikeController {
     }
 
     private Long getUserIdFromAuthentication(Authentication authentication) {
-        // This is a placeholder - you'll need to implement proper user ID extraction
-        // from the authentication object
-        return 1L; // Placeholder
+        String email = authentication.getName();
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Authenticated user not found"));
+        return user.getId();
     }
 }

@@ -20,6 +20,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -55,15 +56,7 @@ public class AuthServiceImpl implements AuthService {
         String accessToken = jwtService.generateAccessToken(user);
         String refreshToken = generateRefreshToken(user);
 
-        return AuthResponse.builder()
-                .token(accessToken)
-                .refreshToken(refreshToken)
-                .userType(user.getUserType().name())
-                .role(user.getRole().name())
-                .userId(user.getId())
-                .userName(user.getUserName())
-                .email(user.getEmail())
-                .build();
+        return buildAuthResponse(user, accessToken, refreshToken);
     }
 
     @Override
@@ -84,15 +77,7 @@ public class AuthServiceImpl implements AuthService {
         String accessToken = jwtService.generateAccessToken(userDetails);
         String refreshToken = generateRefreshToken(user);
 
-        return AuthResponse.builder()
-                .token(accessToken)
-                .refreshToken(refreshToken)
-                .userType(user.getUserType().name())
-                .role(user.getRole().name())
-                .userId(user.getId())
-                .userName(user.getUserName())
-                .email(user.getEmail())
-                .build();
+        return buildAuthResponse(user, accessToken, refreshToken);
     }
 
     @Override
@@ -118,15 +103,7 @@ public class AuthServiceImpl implements AuthService {
         // Generate new access token
         String newAccessToken = jwtService.generateAccessToken(userDetails);
 
-        return AuthResponse.builder()
-                .token(newAccessToken)
-                .refreshToken(refreshToken)
-                .userType(user.getUserType().name())
-                .role(user.getRole().name())
-                .userId(user.getId())
-                .userName(user.getUserName())
-                .email(user.getEmail())
-                .build();
+        return buildAuthResponse(user, newAccessToken, refreshToken);
     }
 
     @Override
@@ -148,5 +125,30 @@ public class AuthServiceImpl implements AuthService {
 
         refreshTokenRepository.save(refreshToken);
         return token;
+    }
+
+    private AuthResponse buildAuthResponse(User user, String accessToken, String refreshToken) {
+        return AuthResponse.builder()
+                .token(accessToken)
+                .refreshToken(refreshToken)
+                .userId(user.getId())
+                .userName(user.getUserName())
+                .email(user.getEmail())
+                .userType(user.getUserType())
+                .role(user.getRole())
+                .badge(user.getBadge())
+                .points(user.getPoints())
+                .awardedDate(user.getAwardedDate())
+                .createdAt(user.getCreatedAt())
+                .firstName(user.getFirstName())
+                .lastName(user.getLastName())
+                .phone(user.getPhone())
+                .address(user.getAddress())
+                .companyName(user.getCompanyName())
+                .associationName(user.getAssociationName())
+                .contactName(user.getContactName())
+                .contactEmail(user.getContactEmail())
+                .birthDate(user.getBirthDate())
+                .build();
     }
 }

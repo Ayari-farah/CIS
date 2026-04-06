@@ -3,6 +3,9 @@ package com.civicplatform.mapper;
 import com.civicplatform.dto.request.UserRequest;
 import com.civicplatform.dto.response.UserResponse;
 import com.civicplatform.entity.User;
+import com.civicplatform.enums.Badge;
+import com.civicplatform.enums.Role;
+import org.mapstruct.AfterMapping;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
@@ -30,7 +33,23 @@ public interface UserMapper {
     @Mapping(target = "projectFundings", ignore = true)
     @Mapping(target = "campaignVotes", ignore = true)
     @Mapping(target = "refreshTokens", ignore = true)
+    @Mapping(target = "badge", ignore = true)
+    @Mapping(target = "points", ignore = true)
+    @Mapping(target = "role", ignore = true)
     User toEntityForCreate(UserRequest userRequest);
+    
+    @AfterMapping
+    default void setDefaults(@MappingTarget User user) {
+        if (user.getBadge() == null) {
+            user.setBadge(Badge.NONE);
+        }
+        if (user.getPoints() == null) {
+            user.setPoints(0);
+        }
+        if (user.getRole() == null) {
+            user.setRole(Role.USER);
+        }
+    }
     
     @Named("stringToLocalDate")
     default LocalDate stringToLocalDate(String date) {

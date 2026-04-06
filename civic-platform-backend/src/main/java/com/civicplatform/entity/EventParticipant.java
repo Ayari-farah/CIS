@@ -32,6 +32,9 @@ public class EventParticipant {
     @Column(name = "checked_in_at")
     private LocalDateTime checkedInAt;
     
+    @Column(name = "completed_at")
+    private LocalDateTime completedAt;
+    
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private ParticipantStatus status = ParticipantStatus.REGISTERED;
@@ -53,6 +56,7 @@ public class EventParticipant {
     
     public void complete() {
         this.status = ParticipantStatus.COMPLETED;
+        this.completedAt = LocalDateTime.now();
     }
     
     public void cancel() {

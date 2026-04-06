@@ -1,13 +1,14 @@
 import { Injectable } from '@angular/core';
 import { HttpInterceptor, HttpRequest, HttpHandler, HttpEvent } from '@angular/common/http';
+import { Router } from '@angular/router';
 import { Observable, throwError } from 'rxjs';
-import { catchError } from 'rxjs/operators';
+import { catchError, switchMap } from 'rxjs/operators';
 import { AuthService } from '../services/auth.service';
 
 @Injectable()
 export class JwtInterceptor implements HttpInterceptor {
 
-  constructor(private authService: AuthService) {}
+  constructor(private authService: AuthService, private router: Router) {}
 
   intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
     // Skip auth for login and register endpoints
@@ -28,7 +29,6 @@ export class JwtInterceptor implements HttpInterceptor {
     return next.handle(req).pipe(
       catchError((error: any) => {
         if (error.status === 401) {
-          // Token expired, try to refresh
           return this.handle401Error(req, next);
         }
         return throwError(error);
@@ -41,15 +41,24 @@ export class JwtInterceptor implements HttpInterceptor {
     
     if (refreshToken) {
       return this.authService.refreshToken({ refreshToken }).pipe(
+        switchMap(() => {
+          const newToken = this.authService.getAccessToken();
+          const retryReq = req.clone({
+            setHeaders: {
+              Authorization: newToken ? `Bearer ${newToken}` : ''
+            }
+          });
+          return next.handle(retryReq);
+        }),
         catchError((refreshError: any) => {
-          // Refresh failed, logout user
           this.authService.logout();
+          this.router.navigate(['/login']);
           return throwError(() => refreshError);
         })
       );
     } else {
-      // No refresh token, logout user
       this.authService.logout();
+      this.router.navigate(['/login']);
       return throwError(() => new Error('No refresh token available'));
     }
   }

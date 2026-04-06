@@ -123,9 +123,21 @@ export class AuthService {
       id: response.userId,
       userName: response.userName,
       email: response.email,
-      userType: response.userType as any,
-      role: response.role as any,
-      createdAt: new Date().toISOString()
+      userType: response.userType,
+      role: response.role,
+      badge: response.badge,
+      points: response.points,
+      awardedDate: response.awardedDate,
+      createdAt: response.createdAt,
+      firstName: response.firstName,
+      lastName: response.lastName,
+      phone: response.phone,
+      address: response.address,
+      birthDate: response.birthDate,
+      companyName: response.companyName,
+      associationName: response.associationName,
+      contactName: response.contactName,
+      contactEmail: response.contactEmail
     };
 
     localStorage.setItem(this.TOKEN_KEY, response.token);
@@ -140,5 +152,10 @@ export class AuthService {
     localStorage.removeItem(this.REFRESH_TOKEN_KEY);
     localStorage.removeItem(this.USER_KEY);
     this.currentUserSubject.next(null);
+  }
+
+  updateCurrentUser(user: User): void {
+    localStorage.setItem(this.USER_KEY, JSON.stringify(user));
+    this.currentUserSubject.next(user);
   }
 }

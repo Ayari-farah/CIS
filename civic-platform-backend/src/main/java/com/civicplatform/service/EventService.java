@@ -19,4 +19,5 @@ public interface EventService {
     void registerForEvent(Long eventId, Long userId);
     void cancelRegistration(Long eventId, Long userId);
     void checkInParticipant(Long eventId, Long userId);
+    void confirmAttendance(Long eventId, Long userId, boolean organizerConfirmation);
 }
