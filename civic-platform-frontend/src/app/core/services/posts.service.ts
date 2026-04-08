@@ -3,15 +3,16 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
 export enum PostType {
-  ANNONCE = 'ANNONCE',
-  EVENT = 'EVENT',
-  SUCCESS_STORY = 'SUCCESS_STORY'
+  EVENT_ANNOUNCEMENT = 'EVENT_ANNOUNCEMENT',
+  TESTIMONIAL = 'TESTIMONIAL',
+  STATUS = 'STATUS',
+  CAMPAIGN_ANNOUNCEMENT = 'CAMPAIGN_ANNOUNCEMENT'
 }
 
 export enum PostStatus {
-  DRAFT = 'DRAFT',
-  PUBLISHED = 'PUBLISHED',
-  ARCHIVED = 'ARCHIVED'
+  PENDING = 'PENDING',
+  ACCEPTED = 'ACCEPTED',
+  REJECTED = 'REJECTED'
 }
 
 export interface Post {
@@ -70,14 +71,22 @@ export class PostsService {
   }
 
   getCommentsByPost(postId: number): Observable<Comment[]> {
-    return this.http.get<Comment[]>(`/api/comments/post/${postId}`);
+    return this.http.get<Comment[]>(`http://localhost:8081/api/comments/post/${postId}`);
   }
 
   createComment(commentData: CommentRequest): Observable<Comment> {
-    return this.http.post<Comment>('/api/comments', commentData);
+    return this.http.post<Comment>('http://localhost:8081/api/comments', commentData);
   }
 
   likePost(postId: number): Observable<void> {
-    return this.http.post<void>(`/api/likes/posts/${postId}`, {});
+    return this.http.post<void>(`http://localhost:8081/api/likes/posts/${postId}`, {});
+  }
+
+  unlikePost(postId: number): Observable<void> {
+    return this.http.delete<void>(`http://localhost:8081/api/likes/posts/${postId}`);
+  }
+
+  checkLike(postId: number): Observable<boolean> {
+    return this.http.get<boolean>(`http://localhost:8081/api/likes/posts/${postId}/check`);
   }
 }

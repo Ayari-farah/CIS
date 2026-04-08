@@ -26,7 +26,11 @@ export interface Event {
   location?: string;
   maxCapacity?: number;
   currentParticipants?: number;
+  organizerId?: number;
+  organizerName?: string;
   createdAt?: string;
+  availableSpots?: number;
+  capacityPercentage?: number;
 }
 
 export interface EventRequest {
@@ -66,5 +70,13 @@ export class EventsService {
 
   registerForEvent(id: number): Observable<void> {
     return this.http.post<void>(`${this.API_URL}/${id}/register`, {});
+  }
+
+  cancelRegistration(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.API_URL}/${id}/register`);
+  }
+
+  attendEvent(id: number): Observable<void> {
+    return this.http.post<void>(`${this.API_URL}/${id}/attend`, {});
   }
 }

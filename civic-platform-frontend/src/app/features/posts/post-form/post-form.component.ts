@@ -2,7 +2,7 @@ import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
-import { PostsService } from '@core/services/posts.service';
+import { PostsService, PostType } from '@core/services/posts.service';
 
 @Component({
   selector: 'app-post-form',
@@ -19,9 +19,7 @@ import { PostsService } from '@core/services/posts.service';
         <div>
           <label class="block text-sm font-medium text-gray-700">Type *</label>
           <select formControlName="type" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border px-3 py-2">
-            <option value="ANNONCE">Announcement</option>
-            <option value="EVENT">Event</option>
-            <option value="SUCCESS_STORY">Success Story</option>
+            <option *ngFor="let t of postTypes" [value]="t">{{ t.replace('_', ' ') }}</option>
           </select>
         </div>
         <div>
@@ -38,6 +36,7 @@ import { PostsService } from '@core/services/posts.service';
 })
 export class PostFormComponent {
   postForm: FormGroup;
+  postTypes = Object.values(PostType);
 
   constructor(
     private fb: FormBuilder,
@@ -47,7 +46,7 @@ export class PostFormComponent {
     this.postForm = this.fb.group({
       title: ['', Validators.required],
       content: ['', Validators.required],
-      type: ['ANNONCE', Validators.required]
+      type: [PostType.STATUS, Validators.required]
     });
   }
 

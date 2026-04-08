@@ -12,7 +12,8 @@ export enum CampaignType {
 export enum CampaignStatus {
   DRAFT = 'DRAFT',
   ACTIVE = 'ACTIVE',
-  COMPLETED = 'COMPLETED'
+  COMPLETED = 'COMPLETED',
+  CANCELLED = 'CANCELLED'
 }
 
 export interface Campaign {
@@ -23,11 +24,18 @@ export interface Campaign {
   status: CampaignStatus;
   startDate?: string;
   endDate?: string;
-  targetAmount?: number;
-  currentAmount?: number;
+  neededAmount?: number;
+  goalKg?: number;
+  goalMeals?: number;
+  goalAmount?: number;
+  currentKg?: number;
+  currentMeals?: number;
+  hashtag?: string;
   voteCount: number;
   createdAt?: string;
-  createdBy?: string;
+  createdById?: number;
+  createdByName?: string;
+  progressPercentage?: number;
 }
 
 export interface CampaignRequest {
@@ -36,7 +44,11 @@ export interface CampaignRequest {
   type: CampaignType;
   startDate?: string;
   endDate?: string;
-  targetAmount?: number;
+  neededAmount?: number;
+  goalKg?: number;
+  goalMeals?: number;
+  goalAmount?: number;
+  hashtag?: string;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -69,7 +81,15 @@ export class CampaignsService {
     return this.http.post<void>(`${this.API_URL}/${id}/vote`, {});
   }
 
-  changeCampaignStatus(id: number, status: CampaignStatus): Observable<Campaign> {
-    return this.http.patch<Campaign>(`${this.API_URL}/${id}/status`, { status });
+  launchCampaign(id: number): Observable<Campaign> {
+    return this.http.post<Campaign>(`${this.API_URL}/${id}/launch`, {});
+  }
+
+  closeCampaign(id: number): Observable<Campaign> {
+    return this.http.post<Campaign>(`${this.API_URL}/${id}/close`, {});
+  }
+
+  cancelCampaign(id: number): Observable<Campaign> {
+    return this.http.post<Campaign>(`${this.API_URL}/${id}/cancel`, {});
   }
 }

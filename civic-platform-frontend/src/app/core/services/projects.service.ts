@@ -11,7 +11,12 @@ export interface Project {
   voteCount: number;
   status?: string;
   startDate?: string;
-  endDate?: string;
+  completionDate?: string;
+  finalReport?: string;
+  organizerType?: string;
+  createdAt?: string;
+  fundingPercentage?: number;
+  fullyFunded?: boolean;
 }
 
 export interface ProjectFunding {
@@ -25,13 +30,13 @@ export interface ProjectRequest {
   title: string;
   description?: string;
   goalAmount: number;
-  startDate?: string;
-  endDate?: string;
+  organizerType?: string;
 }
 
 export interface ProjectFundingRequest {
   projectId: number;
   amount: number;
+  paymentMethod?: string;
 }
 
 @Injectable({ providedIn: 'root' })
