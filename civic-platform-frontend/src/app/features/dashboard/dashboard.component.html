@@ -209,7 +209,12 @@
     <!-- My Posts Tab (Donor) -->
     <div *ngIf="isActiveTab('posts')" class="space-y-6">
       <div class="flex items-center justify-between">
-        <h2 class="text-2xl font-bold text-gray-900">My Posts</h2>
+        <div>
+          <h2 class="text-2xl font-bold text-gray-900">My Posts</h2>
+          <a routerLink="/posts" class="text-sm text-indigo-500 hover:text-indigo-700 font-medium mt-0.5 inline-block transition-colors">
+            Browse community posts →
+          </a>
+        </div>
         <a routerLink="/posts/new" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 shadow-sm transition-colors">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
@@ -374,7 +379,12 @@
     <!-- My Posts Tab (Citizen) -->
     <div *ngIf="isActiveTab('posts')" class="space-y-6">
       <div class="flex items-center justify-between">
-        <h2 class="text-2xl font-bold text-gray-900">My Posts</h2>
+        <div>
+          <h2 class="text-2xl font-bold text-gray-900">My Posts</h2>
+          <a routerLink="/posts" class="text-sm text-indigo-500 hover:text-indigo-700 font-medium mt-0.5 inline-block transition-colors">
+            Browse community posts →
+          </a>
+        </div>
         <a routerLink="/posts/new" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 shadow-sm transition-colors">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
