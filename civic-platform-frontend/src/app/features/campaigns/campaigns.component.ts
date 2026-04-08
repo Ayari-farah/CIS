@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { CampaignsService, Campaign } from '@core/services/campaigns.service';
+import { AuthService } from '@core/services/auth.service';
 
 @Component({
   selector: 'app-campaigns',
@@ -15,7 +16,14 @@ export class CampaignsComponent implements OnInit {
   isLoading = false;
   errorMessage = '';
 
-  constructor(private campaignsService: CampaignsService) {}
+  constructor(
+    private campaignsService: CampaignsService,
+    private authService: AuthService
+  ) {}
+
+  canCreateCampaign(): boolean {
+    return this.authService.isDonor() || this.authService.isAmbassador();
+  }
 
   ngOnInit(): void {
     this.loadCampaigns();

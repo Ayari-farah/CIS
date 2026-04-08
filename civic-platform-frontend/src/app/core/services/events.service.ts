@@ -33,6 +33,20 @@ export interface Event {
   capacityPercentage?: number;
 }
 
+export interface EventParticipation {
+  id: number;
+  registeredAt: string;
+  checkedInAt?: string;
+  status: string;
+  eventId: number;
+  eventTitle: string;
+  eventDate: string;
+  eventLocation?: string;
+  userId: number;
+  userName: string;
+  userEmail: string;
+}
+
 export interface EventRequest {
   title: string;
   description?: string;
@@ -78,5 +92,9 @@ export class EventsService {
 
   attendEvent(id: number): Observable<void> {
     return this.http.post<void>(`${this.API_URL}/${id}/attend`, {});
+  }
+
+  getMyParticipations(): Observable<EventParticipation[]> {
+    return this.http.get<EventParticipation[]>(`${this.API_URL}/my-participations`);
   }
 }

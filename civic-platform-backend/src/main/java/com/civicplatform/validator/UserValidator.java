@@ -36,27 +36,6 @@ public class UserValidator implements ConstraintValidator<ValidUser, UserRequest
                        .addConstraintViolation();
                 isValid = false;
             }
-            if (isBlank(userRequest.getCompanyName())) {
-                context.disableDefaultConstraintViolation();
-                context.buildConstraintViolationWithTemplate("Company name is required for DONOR users")
-                       .addPropertyNode("companyName")
-                       .addConstraintViolation();
-                isValid = false;
-            }
-            if (isBlank(userRequest.getContactName())) {
-                context.disableDefaultConstraintViolation();
-                context.buildConstraintViolationWithTemplate("Contact name is required for DONOR users")
-                       .addPropertyNode("contactName")
-                       .addConstraintViolation();
-                isValid = false;
-            }
-            if (isBlank(userRequest.getContactEmail())) {
-                context.disableDefaultConstraintViolation();
-                context.buildConstraintViolationWithTemplate("Contact email is required for DONOR users")
-                       .addPropertyNode("contactEmail")
-                       .addConstraintViolation();
-                isValid = false;
-            }
         }
 
         if (userRequest.getUserType() == UserType.CITIZEN) {

@@ -1,6 +1,7 @@
 package com.civicplatform.service.impl;
 
 import com.civicplatform.dto.request.EventRequest;
+import com.civicplatform.dto.response.EventParticipantResponse;
 import com.civicplatform.dto.response.EventResponse;
 import com.civicplatform.entity.Event;
 import com.civicplatform.entity.EventParticipant;
@@ -9,6 +10,7 @@ import com.civicplatform.enums.EventStatus;
 import com.civicplatform.enums.ParticipantStatus;
 import com.civicplatform.exception.EventFullException;
 import com.civicplatform.mapper.EventMapper;
+import com.civicplatform.mapper.EventParticipantMapper;
 import com.civicplatform.repository.EventParticipantRepository;
 import com.civicplatform.repository.EventRepository;
 import com.civicplatform.repository.UserRepository;
@@ -30,6 +32,7 @@ public class EventServiceImpl implements EventService {
     private final UserRepository userRepository;
     private final EventParticipantRepository eventParticipantRepository;
     private final EventMapper eventMapper;
+    private final EventParticipantMapper eventParticipantMapper;
     private final PromotionService promotionService;
 
     @Override
@@ -219,5 +222,13 @@ public class EventServiceImpl implements EventService {
 
         // Trigger promotion logic
         promotionService.processEventAttendance(userId);
+    }
+
+    @Override
+    public List<EventParticipantResponse> getParticipationsByUser(Long userId) {
+        List<EventParticipant> participations = eventParticipantRepository.findByUserId(userId);
+        return participations.stream()
+                .map(eventParticipantMapper::toResponse)
+                .collect(Collectors.toList());
     }
 }

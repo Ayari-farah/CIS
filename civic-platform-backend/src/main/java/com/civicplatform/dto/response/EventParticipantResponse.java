@@ -20,6 +20,8 @@ public class EventParticipantResponse {
     private ParticipantStatus status;
     private Long eventId;
     private String eventTitle;
+    private LocalDateTime eventDate;
+    private String eventLocation;
     private Long userId;
     private String userName;
     private String userEmail;

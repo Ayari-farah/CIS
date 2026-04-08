@@ -10,7 +10,11 @@ import java.util.List;
 @Mapper(componentModel = "spring")
 public interface EventParticipantMapper {
 
+    @Mapping(target = "eventId", source = "event.id")
     @Mapping(target = "eventTitle", source = "event.title")
+    @Mapping(target = "eventDate", source = "event.date")
+    @Mapping(target = "eventLocation", source = "event.location")
+    @Mapping(target = "userId", source = "user.id")
     @Mapping(target = "userName", source = "user.userName")
     @Mapping(target = "userEmail", source = "user.email")
     EventParticipantResponse toResponse(EventParticipant eventParticipant);

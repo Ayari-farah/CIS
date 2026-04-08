@@ -35,13 +35,10 @@ export class RegisterComponent {
       password: ['', [Validators.required, Validators.minLength(6)]],
       firstName: ['', Validators.required],
       lastName: ['', Validators.required],
-      phone: ['', Validators.required],
-      address: ['', Validators.required],
+      phone: [''],
+      address: [''],
       birthDate: [''],
-      companyName: [''],
-      associationName: [''],
-      contactName: [''],
-      contactEmail: ['', Validators.email]
+      associationName: ['']
     });
   }
 
@@ -49,25 +46,16 @@ export class RegisterComponent {
     this.userType = type;
     this.step = 2;
     this.errorMessage = '';
-    
+
     if (type === UserType.DONOR) {
       this.registerForm.get('associationName')?.setValidators([Validators.required]);
-      this.registerForm.get('companyName')?.setValidators([Validators.required]);
-      this.registerForm.get('contactName')?.setValidators([Validators.required]);
-      this.registerForm.get('contactEmail')?.setValidators([Validators.required, Validators.email]);
       this.registerForm.get('birthDate')?.clearValidators();
     } else {
       this.registerForm.get('associationName')?.clearValidators();
-      this.registerForm.get('companyName')?.clearValidators();
-      this.registerForm.get('contactName')?.clearValidators();
-      this.registerForm.get('contactEmail')?.setValidators([Validators.email]);
       this.registerForm.get('birthDate')?.setValidators([Validators.required]);
     }
-    
+
     this.registerForm.get('associationName')?.updateValueAndValidity();
-    this.registerForm.get('companyName')?.updateValueAndValidity();
-    this.registerForm.get('contactName')?.updateValueAndValidity();
-    this.registerForm.get('contactEmail')?.updateValueAndValidity();
     this.registerForm.get('birthDate')?.updateValueAndValidity();
   }
 
@@ -96,15 +84,10 @@ export class RegisterComponent {
       userType: this.userType as UserType.CITIZEN | UserType.DONOR,
       firstName: formValue.firstName,
       lastName: formValue.lastName,
-      phone: formValue.phone,
-      address: formValue.address,
+      ...(formValue.phone && { phone: formValue.phone }),
+      ...(formValue.address && { address: formValue.address }),
       ...(this.userType === 'CITIZEN' && { birthDate: formValue.birthDate }),
-      ...(this.userType === 'DONOR' && {
-        companyName: formValue.companyName,
-        associationName: formValue.associationName,
-        contactName: formValue.contactName,
-        contactEmail: formValue.contactEmail
-      })
+      ...(this.userType === 'DONOR' && { associationName: formValue.associationName })
     };
 
     this.authService.register(registerRequest).subscribe({
@@ -148,7 +131,4 @@ export class RegisterComponent {
   get address() { return this.registerForm.get('address'); }
   get birthDate() { return this.registerForm.get('birthDate'); }
   get associationName() { return this.registerForm.get('associationName'); }
-  get companyName() { return this.registerForm.get('companyName'); }
-  get contactName() { return this.registerForm.get('contactName'); }
-  get contactEmail() { return this.registerForm.get('contactEmail'); }
 }

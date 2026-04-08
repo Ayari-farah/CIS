@@ -6,7 +6,7 @@ import { catchError } from 'rxjs/operators';
 import { AuthService } from '@core/services/auth.service';
 import { BadgeComponent } from '@shared/components/badge/badge.component';
 import { CampaignsService, Campaign } from '@core/services/campaigns.service';
-import { EventsService, Event } from '@core/services/events.service';
+import { EventsService, Event, EventParticipation } from '@core/services/events.service';
 import { ProjectsService, Project } from '@core/services/projects.service';
 import { PostsService, Post } from '@core/services/posts.service';
 import { User, Badge } from '@core/models/auth.models';
@@ -17,10 +17,6 @@ interface DashboardTab {
   icon: string;
 }
 
-interface EventParticipation {
-  event: Event;
-  attendedAt: string;
-}
 
 interface FundingHistory {
   projectId: number;
@@ -122,19 +118,18 @@ export class DashboardComponent implements OnInit {
       this.campaignsService.getAllCampaigns().pipe(catchError(() => of([]))),
       this.eventsService.getAllEvents().pipe(catchError(() => of([]))),
       this.projectsService.getAllProjects().pipe(catchError(() => of([]))),
-      this.postsService.getAllPosts().pipe(catchError(() => of([])))
+      this.postsService.getAllPosts().pipe(catchError(() => of([]))),
+      this.eventsService.getMyParticipations().pipe(catchError(() => of([])))
     ];
 
     forkJoin(requests).subscribe({
       next: (results: any[]) => {
         const allPosts: Post[] = results[3] || [];
         const currentUserName = this.currentUser?.userName;
-        // Only show the logged-in user's own posts in "My Posts"
         this.myPosts = currentUserName
           ? allPosts.filter(p => p.creator === currentUserName)
           : allPosts;
 
-        // Seed the liked set so hearts are red for already-liked posts
         this.myPosts.forEach(post => {
           this.postsService.checkLike(post.id).subscribe({
             next: (liked) => { if (liked) this.likedPosts.add(post.id); },
@@ -151,6 +146,8 @@ export class DashboardComponent implements OnInit {
           this.feedCampaigns = results[0] || [];
           this.feedEvents = results[1] || [];
           this.feedProjects = results[2] || [];
+          this.myParticipations = results[4] || [];
+          this.eventsAttended = this.myParticipations.filter(p => p.status === 'COMPLETED').length;
         }
         this.isLoading = false;
       },

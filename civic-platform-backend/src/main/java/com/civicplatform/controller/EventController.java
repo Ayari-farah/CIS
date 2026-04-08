@@ -1,6 +1,7 @@
 package com.civicplatform.controller;
 
 import com.civicplatform.dto.request.EventRequest;
+import com.civicplatform.dto.response.EventParticipantResponse;
 import com.civicplatform.dto.response.EventResponse;
 import com.civicplatform.entity.User;
 import com.civicplatform.enums.EventStatus;
@@ -122,6 +123,14 @@ public class EventController {
         checkEventOwnership(id, authentication);
         eventService.checkInParticipant(id, userId);
         return ResponseEntity.ok().build();
+    }
+
+    @Operation(summary = "Get my event participations")
+    @GetMapping("/my-participations")
+    public ResponseEntity<List<EventParticipantResponse>> getMyParticipations(Authentication authentication) {
+        Long userId = getUserIdFromAuthentication(authentication);
+        List<EventParticipantResponse> response = eventService.getParticipationsByUser(userId);
+        return ResponseEntity.ok(response);
     }
 
     @Operation(summary = "Confirm attendance and trigger promotion")
