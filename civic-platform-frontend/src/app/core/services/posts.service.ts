@@ -23,13 +23,18 @@ export interface Post {
   creator: string;
   createdAt: string;
   likesCount: number;
-  commentsCount: number;
+  campaignId?: number;
+  campaignName?: string;
+  comments?: Comment[];
 }
 
 export interface Comment {
   id: number;
   content: string;
   authorName: string;
+  authorEmail?: string;
+  authorId?: number;
+  postId?: number;
   createdAt: string;
 }
 
