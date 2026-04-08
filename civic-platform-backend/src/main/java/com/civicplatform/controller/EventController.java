@@ -78,24 +78,24 @@ public class EventController {
 
     @Operation(summary = "Update event")
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN') or @eventService.getEventById(#id).organizerId == authentication.principal.id")
-    public ResponseEntity<EventResponse> updateEvent(@PathVariable Long id, @Valid @RequestBody EventRequest eventRequest) {
+    public ResponseEntity<EventResponse> updateEvent(@PathVariable Long id, @Valid @RequestBody EventRequest eventRequest, Authentication authentication) {
+        checkEventOwnership(id, authentication);
         EventResponse response = eventService.updateEvent(id, eventRequest);
         return ResponseEntity.ok(response);
     }
 
     @Operation(summary = "Delete event")
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN') or @eventService.getEventById(#id).organizerId == authentication.principal.id")
-    public ResponseEntity<Void> deleteEvent(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteEvent(@PathVariable Long id, Authentication authentication) {
+        checkEventOwnership(id, authentication);
         eventService.deleteEvent(id);
         return ResponseEntity.noContent().build();
     }
 
     @Operation(summary = "Cancel event")
     @PostMapping("/{id}/cancel")
-    @PreAuthorize("hasRole('ADMIN') or @eventService.getEventById(#id).organizerId == authentication.principal.id")
-    public ResponseEntity<EventResponse> cancelEvent(@PathVariable Long id) {
+    public ResponseEntity<EventResponse> cancelEvent(@PathVariable Long id, Authentication authentication) {
+        checkEventOwnership(id, authentication);
         EventResponse response = eventService.cancelEvent(id);
         return ResponseEntity.ok(response);
     }
@@ -118,8 +118,8 @@ public class EventController {
 
     @Operation(summary = "Check in participant")
     @PostMapping("/{id}/checkin")
-    @PreAuthorize("hasRole('ADMIN') or @eventService.getEventById(#id).organizerId == authentication.principal.id")
-    public ResponseEntity<Void> checkInParticipant(@PathVariable Long id, @RequestParam Long userId) {
+    public ResponseEntity<Void> checkInParticipant(@PathVariable Long id, @RequestParam Long userId, Authentication authentication) {
+        checkEventOwnership(id, authentication);
         eventService.checkInParticipant(id, userId);
         return ResponseEntity.ok().build();
     }
@@ -130,6 +130,18 @@ public class EventController {
         Long userId = getUserIdFromAuthentication(authentication);
         eventService.confirmAttendance(id, userId, false);
         return ResponseEntity.ok().build();
+    }
+
+    private void checkEventOwnership(Long eventId, Authentication authentication) {
+        User user = getUserFromAuthentication(authentication);
+        boolean isAdmin = user.getAuthorities().stream()
+                .anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority()));
+        if (!isAdmin) {
+            EventResponse event = eventService.getEventById(eventId);
+            if (!user.getId().equals(event.getOrganizerId())) {
+                throw new AccessDeniedException("You are not the organizer of this event");
+            }
+        }
     }
 
     private Long getUserIdFromAuthentication(Authentication authentication) {

@@ -64,16 +64,16 @@ public class ProjectController {
 
     @Operation(summary = "Update project")
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN') or @projectService.getProjectById(#id).organizerId == authentication.principal.id")
-    public ResponseEntity<ProjectResponse> updateProject(@PathVariable Long id, @Valid @RequestBody ProjectRequest projectRequest) {
+    public ResponseEntity<ProjectResponse> updateProject(@PathVariable Long id, @Valid @RequestBody ProjectRequest projectRequest, Authentication authentication) {
+        checkAdminOrDonorAmbassador(authentication);
         ProjectResponse response = projectService.updateProject(id, projectRequest);
         return ResponseEntity.ok(response);
     }
 
     @Operation(summary = "Delete project")
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN') or @projectService.getProjectById(#id).organizerId == authentication.principal.id")
-    public ResponseEntity<Void> deleteProject(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteProject(@PathVariable Long id, Authentication authentication) {
+        checkAdminOrDonorAmbassador(authentication);
         projectService.deleteProject(id);
         return ResponseEntity.noContent().build();
     }
@@ -97,10 +97,19 @@ public class ProjectController {
 
     @Operation(summary = "Complete project")
     @PostMapping("/{id}/complete")
-    @PreAuthorize("hasRole('ADMIN') or @projectService.getProjectById(#id).organizerId == authentication.principal.id")
-    public ResponseEntity<ProjectResponse> completeProject(@PathVariable Long id, @RequestParam String finalReport) {
+    public ResponseEntity<ProjectResponse> completeProject(@PathVariable Long id, @RequestParam String finalReport, Authentication authentication) {
+        checkAdminOrDonorAmbassador(authentication);
         ProjectResponse response = projectService.completeProject(id, finalReport);
         return ResponseEntity.ok(response);
+    }
+
+    private void checkAdminOrDonorAmbassador(Authentication authentication) {
+        User user = getUserFromAuthentication(authentication);
+        boolean isAdmin = user.getAuthorities().stream()
+                .anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority()));
+        if (!isAdmin && user.getUserType() != UserType.DONOR && user.getUserType() != UserType.AMBASSADOR) {
+            throw new AccessDeniedException("Only ADMIN, DONOR, or AMBASSADOR can perform this action");
+        }
     }
 
     private Long getUserIdFromAuthentication(Authentication authentication) {

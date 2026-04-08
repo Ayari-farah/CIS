@@ -45,6 +45,7 @@ public class Event {
     private String location;
     
     @Column(name = "current_participants", nullable = false)
+    @Builder.Default
     private Integer currentParticipants = 0;
     
     @Column(name = "organizer_id", nullable = false)
@@ -52,6 +53,7 @@ public class Event {
     
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
+    @Builder.Default
     private EventStatus status = EventStatus.UPCOMING;
     
     @CreatedDate

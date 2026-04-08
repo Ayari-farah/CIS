@@ -66,16 +66,16 @@ public class PostController {
 
     @Operation(summary = "Update post")
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN') or @postService.getPostById(#id).creator == authentication.name")
-    public ResponseEntity<PostResponse> updatePost(@PathVariable Long id, @Valid @RequestBody PostRequest postRequest) {
+    public ResponseEntity<PostResponse> updatePost(@PathVariable Long id, @Valid @RequestBody PostRequest postRequest, Authentication authentication) {
+        checkPostOwnership(id, authentication);
         PostResponse response = postService.updatePost(id, postRequest);
         return ResponseEntity.ok(response);
     }
 
     @Operation(summary = "Delete post")
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN') or @postService.getPostById(#id).creator == authentication.name")
-    public ResponseEntity<Void> deletePost(@PathVariable Long id) {
+    public ResponseEntity<Void> deletePost(@PathVariable Long id, Authentication authentication) {
+        checkPostOwnership(id, authentication);
         postService.deletePost(id);
         return ResponseEntity.noContent().build();
     }
@@ -94,6 +94,19 @@ public class PostController {
     public ResponseEntity<PostResponse> rejectPost(@PathVariable Long id) {
         PostResponse response = postService.rejectPost(id);
         return ResponseEntity.ok(response);
+    }
+
+    private void checkPostOwnership(Long postId, Authentication authentication) {
+        User user = userRepository.findByEmail(authentication.getName())
+                .orElseThrow(() -> new RuntimeException("Authenticated user not found"));
+        boolean isAdmin = user.getAuthorities().stream()
+                .anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority()));
+        if (!isAdmin) {
+            PostResponse post = postService.getPostById(postId);
+            if (!user.getUserName().equals(post.getCreator())) {
+                throw new org.springframework.security.access.AccessDeniedException("You are not the owner of this post");
+            }
+        }
     }
 
     private Long getUserIdFromAuthentication(Authentication authentication) {

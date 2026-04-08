@@ -57,18 +57,31 @@ public class CommentController {
 
     @Operation(summary = "Update comment")
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN') or @commentService.getCommentById(#id).authorEmail == authentication.name")
-    public ResponseEntity<CommentResponse> updateComment(@PathVariable Long id, @Valid @RequestBody CommentRequest commentRequest) {
+    public ResponseEntity<CommentResponse> updateComment(@PathVariable Long id, @Valid @RequestBody CommentRequest commentRequest, Authentication authentication) {
+        checkCommentOwnership(id, authentication);
         CommentResponse response = commentService.updateComment(id, commentRequest);
         return ResponseEntity.ok(response);
     }
 
     @Operation(summary = "Delete comment")
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN') or @commentService.getCommentById(#id).authorEmail == authentication.name")
-    public ResponseEntity<Void> deleteComment(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteComment(@PathVariable Long id, Authentication authentication) {
+        checkCommentOwnership(id, authentication);
         commentService.deleteComment(id);
         return ResponseEntity.noContent().build();
+    }
+
+    private void checkCommentOwnership(Long commentId, Authentication authentication) {
+        User user = userRepository.findByEmail(authentication.getName())
+                .orElseThrow(() -> new RuntimeException("Authenticated user not found"));
+        boolean isAdmin = user.getAuthorities().stream()
+                .anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority()));
+        if (!isAdmin) {
+            CommentResponse comment = commentService.getCommentById(commentId);
+            if (!authentication.getName().equals(comment.getAuthorEmail())) {
+                throw new org.springframework.security.access.AccessDeniedException("You are not the author of this comment");
+            }
+        }
     }
 
     private Long getUserIdFromAuthentication(Authentication authentication) {

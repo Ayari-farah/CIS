@@ -57,6 +57,7 @@ public class User implements UserDetails {
     
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
+    @Builder.Default
     private Role role = Role.USER;
     
     @CreatedDate
@@ -82,7 +83,7 @@ public class User implements UserDetails {
     private String phone;
     private LocalDate birthDate;
     
-    // PARTICIPANT fields
+    @Builder.Default
     private Integer points = 0;
     
     // Relationships

@@ -35,6 +35,7 @@ public class UserRequest {
     @NotNull(message = "User type is required")
     private UserType userType;
     
+    @Builder.Default
     private Role role = Role.USER;
     
     // AMBASSADOR fields

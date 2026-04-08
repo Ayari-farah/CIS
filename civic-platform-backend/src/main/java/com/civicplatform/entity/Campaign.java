@@ -58,13 +58,16 @@ public class Campaign {
     private BigDecimal goalAmount;
     
     @Column(name = "current_kg")
+    @Builder.Default
     private Integer currentKg = 0;
     
     @Column(name = "current_meals")
+    @Builder.Default
     private Integer currentMeals = 0;
     
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
+    @Builder.Default
     private CampaignStatus status = CampaignStatus.DRAFT;
     
     private String hashtag;

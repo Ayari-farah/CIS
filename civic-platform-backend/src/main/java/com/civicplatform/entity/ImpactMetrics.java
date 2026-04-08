@@ -29,24 +29,31 @@ public class ImpactMetrics {
     private LocalDate metricDate;
     
     @Column(name = "total_donations_kg", nullable = false)
+    @Builder.Default
     private Integer totalDonationsKg = 0;
     
     @Column(name = "total_meals_equivalent", nullable = false)
+    @Builder.Default
     private Integer totalMealsEquivalent = 0;
     
     @Column(name = "total_co2_saved_kg", precision = 15, scale = 2)
+    @Builder.Default
     private BigDecimal totalCo2SavedKg = BigDecimal.ZERO;
     
     @Column(name = "total_people_helped", nullable = false)
+    @Builder.Default
     private Integer totalPeopleHelped = 0;
     
     @Column(name = "active_associations", nullable = false)
+    @Builder.Default
     private Integer activeAssociations = 0;
     
     @Column(name = "active_donors", nullable = false)
+    @Builder.Default
     private Integer activeDonors = 0;
     
     @Column(name = "active_volunteers", nullable = false)
+    @Builder.Default
     private Integer activeVolunteers = 0;
     
     private String region;

@@ -12,8 +12,10 @@ import java.util.List;
 @Mapper(componentModel = "spring")
 public interface CommentMapper {
 
+    @Mapping(target = "authorId", source = "author.id")
     @Mapping(target = "authorName", source = "author.userName")
     @Mapping(target = "authorEmail", source = "author.email")
+    @Mapping(target = "postId", source = "post.id")
     CommentResponse toResponse(Comment comment);
     
     List<CommentResponse> toResponseList(List<Comment> comments);
@@ -24,5 +26,9 @@ public interface CommentMapper {
     @Mapping(target = "post", ignore = true)
     Comment toEntity(CommentRequest commentRequest);
     
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "author", ignore = true)
+    @Mapping(target = "post", ignore = true)
     void updateEntity(CommentRequest commentRequest, @MappingTarget Comment comment);
 }

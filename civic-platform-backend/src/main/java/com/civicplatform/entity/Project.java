@@ -36,12 +36,15 @@ public class Project {
     private BigDecimal goalAmount;
     
     @Column(name = "current_amount", precision = 15, scale = 2)
+    @Builder.Default
     private BigDecimal currentAmount = BigDecimal.ZERO;
     
     @Column(name = "vote_count", nullable = false)
+    @Builder.Default
     private Integer voteCount = 0;
     
     @Column(nullable = false)
+    @Builder.Default
     private String status = "SUBMITTED";
     
     @Column(name = "start_date")

@@ -64,40 +64,40 @@ public class CampaignController {
 
     @Operation(summary = "Update campaign")
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN') or @campaignService.getCampaignById(#id).createdById == authentication.principal.id")
-    public ResponseEntity<CampaignResponse> updateCampaign(@PathVariable Long id, @Valid @RequestBody CampaignRequest campaignRequest) {
+    public ResponseEntity<CampaignResponse> updateCampaign(@PathVariable Long id, @Valid @RequestBody CampaignRequest campaignRequest, Authentication authentication) {
+        checkCampaignOwnership(id, authentication);
         CampaignResponse response = campaignService.updateCampaign(id, campaignRequest);
         return ResponseEntity.ok(response);
     }
 
     @Operation(summary = "Delete campaign")
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN') or @campaignService.getCampaignById(#id).createdById == authentication.principal.id")
-    public ResponseEntity<Void> deleteCampaign(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteCampaign(@PathVariable Long id, Authentication authentication) {
+        checkCampaignOwnership(id, authentication);
         campaignService.deleteCampaign(id);
         return ResponseEntity.noContent().build();
     }
 
     @Operation(summary = "Launch campaign")
     @PostMapping("/{id}/launch")
-    @PreAuthorize("hasRole('ADMIN') or @campaignService.getCampaignById(#id).createdById == authentication.principal.id")
-    public ResponseEntity<CampaignResponse> launchCampaign(@PathVariable Long id) {
+    public ResponseEntity<CampaignResponse> launchCampaign(@PathVariable Long id, Authentication authentication) {
+        checkCampaignOwnership(id, authentication);
         CampaignResponse response = campaignService.launchCampaign(id);
         return ResponseEntity.ok(response);
     }
 
     @Operation(summary = "Close campaign")
     @PostMapping("/{id}/close")
-    @PreAuthorize("hasRole('ADMIN') or @campaignService.getCampaignById(#id).createdById == authentication.principal.id")
-    public ResponseEntity<CampaignResponse> closeCampaign(@PathVariable Long id) {
+    public ResponseEntity<CampaignResponse> closeCampaign(@PathVariable Long id, Authentication authentication) {
+        checkCampaignOwnership(id, authentication);
         CampaignResponse response = campaignService.closeCampaign(id);
         return ResponseEntity.ok(response);
     }
 
     @Operation(summary = "Cancel campaign")
     @PostMapping("/{id}/cancel")
-    @PreAuthorize("hasRole('ADMIN') or @campaignService.getCampaignById(#id).createdById == authentication.principal.id")
-    public ResponseEntity<CampaignResponse> cancelCampaign(@PathVariable Long id) {
+    public ResponseEntity<CampaignResponse> cancelCampaign(@PathVariable Long id, Authentication authentication) {
+        checkCampaignOwnership(id, authentication);
         CampaignResponse response = campaignService.cancelCampaign(id);
         return ResponseEntity.ok(response);
     }
@@ -116,6 +116,18 @@ public class CampaignController {
     public ResponseEntity<Void> activateCampaignsReadyForActivation() {
         campaignService.activateCampaignsReadyForActivation();
         return ResponseEntity.ok().build();
+    }
+
+    private void checkCampaignOwnership(Long campaignId, Authentication authentication) {
+        User user = getUserFromAuthentication(authentication);
+        boolean isAdmin = user.getAuthorities().stream()
+                .anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority()));
+        if (!isAdmin) {
+            CampaignResponse campaign = campaignService.getCampaignById(campaignId);
+            if (campaign.getCreatedById() == null || !user.getId().equals(campaign.getCreatedById())) {
+                throw new AccessDeniedException("You are not the owner of this campaign");
+            }
+        }
     }
 
     private Long getUserIdFromAuthentication(Authentication authentication) {
