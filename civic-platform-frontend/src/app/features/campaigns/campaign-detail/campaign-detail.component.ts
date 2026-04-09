@@ -53,7 +53,7 @@ export class CampaignDetailComponent implements OnInit {
       next: (campaign) => {
         this.campaign = campaign;
         this.isLoading = false;
-        if (this.authService.isLoggedIn()) {
+        if (this.authService.isLoggedIn() && !this.authService.isAdmin()) {
           this.campaignsService.hasVoted(id).subscribe({
             next: (v) => (this.hasVoted = v),
             error: () => (this.hasVoted = false)
@@ -67,15 +67,38 @@ export class CampaignDetailComponent implements OnInit {
     });
   }
 
-  canManage(): boolean {
-    const u = this.authService.getCurrentUser();
-    if (!u || !this.campaign) {
+  /** Creator or platform admin may edit, launch, close, or delete. */
+  canManageCampaign(): boolean {
+    if (!this.campaign) {
       return false;
     }
-    if (this.authService.hasRole('ADMIN')) {
+    if (this.authService.isAdmin()) {
       return true;
     }
-    return u.id === this.campaign.createdById;
+    const u = this.authService.getCurrentUser();
+    return !!u && u.id === this.campaign.createdById;
+  }
+
+  /** Launch votes are for members; admins manage without voting here. */
+  showVoteSection(): boolean {
+    return !this.authService.isAdmin();
+  }
+
+  campaignEditLink(): (string | number)[] {
+    if (!this.campaign) {
+      return [this.campaignsListPath()];
+    }
+    return this.isAdminRoute()
+      ? ['/admin/campaigns', this.campaign.id, 'edit']
+      : ['/campaigns', this.campaign.id, 'edit'];
+  }
+
+  campaignsListPath(): string {
+    return this.isAdminRoute() ? '/admin/campaigns' : '/campaigns';
+  }
+
+  isAdminRoute(): boolean {
+    return this.router.url.split('?')[0].startsWith('/admin');
   }
 
   getStatusPillClass(status: string): string {
@@ -204,7 +227,7 @@ export class CampaignDetailComponent implements OnInit {
     this.deleteLoading = true;
     this.campaignsService.deleteCampaign(this.campaign.id).subscribe({
       next: () => {
-        this.router.navigate(['/campaigns']);
+        this.router.navigateByUrl(this.campaignsListPath());
       },
       error: (e) => {
         this.errorMessage = e.error?.message || 'Suppression impossible';

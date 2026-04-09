@@ -3,6 +3,7 @@ package com.civicplatform.controller;
 import com.civicplatform.service.LikeService;
 import com.civicplatform.entity.User;
 import com.civicplatform.repository.UserRepository;
+import com.civicplatform.security.RegularAccountPolicy;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -22,7 +23,9 @@ public class LikeController {
     @Operation(summary = "Like a post")
     @PostMapping("/posts/{postId}")
     public ResponseEntity<Void> likePost(@PathVariable Long postId, Authentication authentication) {
-        Long userId = getUserIdFromAuthentication(authentication);
+        User user = getUserFromAuthentication(authentication);
+        RegularAccountPolicy.requireRegularUser(user);
+        Long userId = user.getId();
         likeService.likePost(postId, userId);
         return ResponseEntity.ok().build();
     }
@@ -30,7 +33,9 @@ public class LikeController {
     @Operation(summary = "Unlike a post")
     @DeleteMapping("/posts/{postId}")
     public ResponseEntity<Void> unlikePost(@PathVariable Long postId, Authentication authentication) {
-        Long userId = getUserIdFromAuthentication(authentication);
+        User user = getUserFromAuthentication(authentication);
+        RegularAccountPolicy.requireRegularUser(user);
+        Long userId = user.getId();
         likeService.unlikePost(postId, userId);
         return ResponseEntity.ok().build();
     }
@@ -38,7 +43,9 @@ public class LikeController {
     @Operation(summary = "Check if post is liked by user")
     @GetMapping("/posts/{postId}/check")
     public ResponseEntity<Boolean> isPostLikedByUser(@PathVariable Long postId, Authentication authentication) {
-        Long userId = getUserIdFromAuthentication(authentication);
+        User user = getUserFromAuthentication(authentication);
+        RegularAccountPolicy.requireRegularUser(user);
+        Long userId = user.getId();
         boolean isLiked = likeService.isPostLikedByUser(postId, userId);
         return ResponseEntity.ok(isLiked);
     }
@@ -50,10 +57,8 @@ public class LikeController {
         return ResponseEntity.ok(count);
     }
 
-    private Long getUserIdFromAuthentication(Authentication authentication) {
-        String email = authentication.getName();
-        User user = userRepository.findByEmail(email)
+    private User getUserFromAuthentication(Authentication authentication) {
+        return userRepository.findByEmail(authentication.getName())
                 .orElseThrow(() -> new RuntimeException("Authenticated user not found"));
-        return user.getId();
     }
 }

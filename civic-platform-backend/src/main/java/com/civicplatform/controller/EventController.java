@@ -9,6 +9,7 @@ import com.civicplatform.entity.User;
 import com.civicplatform.enums.EventStatus;
 import com.civicplatform.enums.UserType;
 import com.civicplatform.repository.UserRepository;
+import com.civicplatform.security.RegularAccountPolicy;
 import com.civicplatform.service.CertificateService;
 import com.civicplatform.service.EventService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -40,6 +41,11 @@ public class EventController {
     @PostMapping
     public ResponseEntity<EventResponse> createEvent(@Valid @RequestBody EventRequest eventRequest, Authentication authentication) {
         User user = getUserFromAuthentication(authentication);
+        if (user.isAdmin()) {
+            EventResponse response = eventService.createEvent(eventRequest, user.getId());
+            return new ResponseEntity<>(response, HttpStatus.CREATED);
+        }
+        RegularAccountPolicy.requireRegularUser(user);
         if (user.getUserType() != UserType.DONOR && user.getUserType() != UserType.AMBASSADOR) {
             throw new AccessDeniedException("Only DONOR and AMBASSADOR users can create events");
         }
@@ -48,12 +54,12 @@ public class EventController {
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
-    /** Static paths must be declared before /{id} or Spring matches "my-participations" as an id. */
     @Operation(summary = "Get my event participations")
     @GetMapping("/my-participations")
     public ResponseEntity<List<EventParticipantResponse>> getMyParticipations(Authentication authentication) {
-        Long userId = getUserIdFromAuthentication(authentication);
-        List<EventParticipantResponse> response = eventService.getParticipationsByUser(userId);
+        User user = getUserFromAuthentication(authentication);
+        RegularAccountPolicy.requireRegularUser(user);
+        List<EventParticipantResponse> response = eventService.getParticipationsByUser(user.getId());
         return ResponseEntity.ok(response);
     }
 
@@ -90,8 +96,9 @@ public class EventController {
     public ResponseEntity<EventRegistrationStatusResponse> getRegistrationStatus(
             @PathVariable Long id,
             Authentication authentication) {
-        Long userId = getUserIdFromAuthentication(authentication);
-        EventRegistrationStatusResponse response = eventService.getRegistrationStatus(id, userId);
+        User user = getUserFromAuthentication(authentication);
+        RegularAccountPolicy.requireRegularUser(user);
+        EventRegistrationStatusResponse response = eventService.getRegistrationStatus(id, user.getId());
         return ResponseEntity.ok(response);
     }
 
@@ -103,9 +110,8 @@ public class EventController {
             @PathVariable Long userId,
             Authentication authentication) {
         User authUser = getUserFromAuthentication(authentication);
-        boolean isAdmin = authUser.getAuthorities().stream()
-                .anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority()));
-        if (!isAdmin && !authUser.getId().equals(userId)) {
+        RegularAccountPolicy.requireRegularUser(authUser);
+        if (!authUser.getId().equals(userId)) {
             throw new AccessDeniedException("You can only download your own certificate");
         }
         byte[] pdf = certificateService.generateCertificate(eventId, userId);
@@ -162,16 +168,18 @@ public class EventController {
     @Operation(summary = "Register for event")
     @PostMapping("/{id}/register")
     public ResponseEntity<Void> registerForEvent(@PathVariable Long id, Authentication authentication) {
-        Long userId = getUserIdFromAuthentication(authentication);
-        eventService.registerForEvent(id, userId);
+        User user = getUserFromAuthentication(authentication);
+        RegularAccountPolicy.requireRegularUser(user);
+        eventService.registerForEvent(id, user.getId());
         return ResponseEntity.ok().build();
     }
 
     @Operation(summary = "Cancel registration")
     @DeleteMapping("/{id}/register")
     public ResponseEntity<Void> cancelRegistration(@PathVariable Long id, Authentication authentication) {
-        Long userId = getUserIdFromAuthentication(authentication);
-        eventService.cancelRegistration(id, userId);
+        User user = getUserFromAuthentication(authentication);
+        RegularAccountPolicy.requireRegularUser(user);
+        eventService.cancelRegistration(id, user.getId());
         return ResponseEntity.ok().build();
     }
 
@@ -186,25 +194,22 @@ public class EventController {
     @Operation(summary = "Confirm attendance and trigger promotion")
     @PostMapping("/{id}/attend")
     public ResponseEntity<Void> confirmAttendance(@PathVariable Long id, Authentication authentication) {
-        Long userId = getUserIdFromAuthentication(authentication);
-        eventService.confirmAttendance(id, userId, false);
+        User user = getUserFromAuthentication(authentication);
+        RegularAccountPolicy.requireRegularUser(user);
+        eventService.confirmAttendance(id, user.getId(), false);
         return ResponseEntity.ok().build();
     }
 
     private void checkEventOwnership(Long eventId, Authentication authentication) {
         User user = getUserFromAuthentication(authentication);
-        boolean isAdmin = user.getAuthorities().stream()
-                .anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority()));
-        if (!isAdmin) {
-            EventResponse event = eventService.getEventById(eventId);
-            if (!user.getId().equals(event.getOrganizerId())) {
-                throw new AccessDeniedException("You are not the organizer of this event");
-            }
+        if (user.isAdmin()) {
+            return;
         }
-    }
-
-    private Long getUserIdFromAuthentication(Authentication authentication) {
-        return getUserFromAuthentication(authentication).getId();
+        RegularAccountPolicy.requireRegularUser(user);
+        EventResponse event = eventService.getEventById(eventId);
+        if (!user.getId().equals(event.getOrganizerId())) {
+            throw new AccessDeniedException("You are not the organizer of this event");
+        }
     }
 
     private User getUserFromAuthentication(Authentication authentication) {

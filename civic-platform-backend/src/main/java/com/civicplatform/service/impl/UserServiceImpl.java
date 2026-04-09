@@ -5,7 +5,6 @@ import com.civicplatform.dto.request.UserRequest;
 import com.civicplatform.dto.response.UserResponse;
 import com.civicplatform.entity.User;
 import com.civicplatform.enums.Badge;
-import com.civicplatform.enums.Role;
 import com.civicplatform.enums.UserType;
 import com.civicplatform.mapper.UserMapper;
 import com.civicplatform.repository.EventParticipantRepository;
@@ -15,6 +14,7 @@ import com.civicplatform.service.UserResponseAssembler;
 import com.civicplatform.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,15 +32,20 @@ public class UserServiceImpl implements UserService {
     private final UserResponseAssembler userResponseAssembler;
     private final EventParticipantRepository eventParticipantRepository;
     private final EmailService emailService;
+    private final PasswordEncoder passwordEncoder;
 
     @Override
     @Transactional
     public UserResponse createUser(UserRequest userRequest) {
         User user = userMapper.toEntity(userRequest);
-        // Always hardcode these fields on registration - ignore any values in request
-        user.setRole(Role.USER);
-        user.setBadge(null);
-        user.setPoints(0);
+        user.setPassword(passwordEncoder.encode(userRequest.getPassword()));
+        user.setAdmin(false);
+        if (user.getBadge() == null) {
+            user.setBadge(Badge.NONE);
+        }
+        if (user.getPoints() == null) {
+            user.setPoints(0);
+        }
         user = userRepository.save(user);
         return userResponseAssembler.toUserResponse(user);
     }
@@ -63,6 +68,7 @@ public class UserServiceImpl implements UserService {
     public List<UserResponse> getAllUsers() {
         List<User> users = userRepository.findAll();
         return users.stream()
+                .filter(u -> !u.isAdmin())
                 .map(userResponseAssembler::toUserResponse)
                 .collect(Collectors.toList());
     }
@@ -114,7 +120,7 @@ public class UserServiceImpl implements UserService {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("User not found with id: " + id));
 
-        // Only update profile fields - never touch userName, email, role, userType, badge, points
+        // Only update profile fields - never touch userName, email, userType, badge, points
         if (request.getFirstName() != null) user.setFirstName(request.getFirstName());
         if (request.getLastName() != null) user.setLastName(request.getLastName());
         if (request.getPhone() != null) user.setPhone(request.getPhone());
@@ -146,8 +152,17 @@ public class UserServiceImpl implements UserService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
 
-        if (user.getUserType() != UserType.CITIZEN) {
-            throw new RuntimeException("Only CITIZEN users can be promoted to AMBASSADOR");
+        if (user.isAdmin()) {
+            throw new RuntimeException("Cannot promote platform admin accounts");
+        }
+        if (user.getUserType() == UserType.DONOR) {
+            throw new RuntimeException("DONOR cannot be promoted to AMBASSADOR");
+        }
+        if (user.getUserType() == UserType.AMBASSADOR) {
+            throw new RuntimeException("User is already an AMBASSADOR");
+        }
+        if (user.getUserType() != UserType.CITIZEN && user.getUserType() != UserType.PARTICIPANT) {
+            throw new RuntimeException("Only CITIZEN or PARTICIPANT users can be promoted to AMBASSADOR");
         }
 
         long completedEventsCount = eventParticipantRepository.countAttendedCompletedEventsByUser(userId);

@@ -1,9 +1,9 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { AuthService } from '@core/services/auth.service';
-import { User } from '@core/models/auth.models';
+import { AccountType, User } from '@core/models/auth.models';
 import { UsersService } from '@core/services/users.service';
 
 import { BadgeComponent } from '@shared/components/badge/badge.component';
@@ -49,13 +49,9 @@ import { BadgeComponent } from '@shared/components/badge/badge.component';
 
           <form [formGroup]="profileForm" (ngSubmit)="save()" class="p-6 space-y-6">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div class="bg-blue-50 rounded-xl p-4">
-                <label class="text-xs text-blue-700 font-semibold">User Type (read-only)</label>
+              <div class="bg-blue-50 rounded-xl p-4 md:col-span-2">
+                <label class="text-xs text-blue-700 font-semibold">User type (read-only)</label>
                 <p class="text-lg font-semibold text-blue-900">{{ user.userType }}</p>
-              </div>
-              <div class="bg-emerald-50 rounded-xl p-4">
-                <label class="text-xs text-emerald-700 font-semibold">Role (read-only)</label>
-                <p class="text-lg font-semibold text-emerald-900">{{ user.role }}</p>
               </div>
             </div>
 
@@ -119,7 +115,7 @@ import { BadgeComponent } from '@shared/components/badge/badge.component';
     }
   `]
 })
-export class ProfileComponent {
+export class ProfileComponent implements OnInit {
   currentUser: User | null = null;
   profileForm: FormGroup;
   isSaving = false;
@@ -129,6 +125,7 @@ export class ProfileComponent {
 
   constructor(
     private authService: AuthService,
+    private router: Router,
     private usersService: UsersService,
     private fb: FormBuilder
   ) {
@@ -146,7 +143,11 @@ export class ProfileComponent {
       contactEmail: ['', Validators.email]
     });
 
-    this.authService.currentUser$.subscribe(user => {
+    this.authService.currentUser$.subscribe((user) => {
+      if (this.isPlatformAdmin(user)) {
+        this.router.navigate(['/admin/dashboard']);
+        return;
+      }
       this.currentUser = user;
       if (user) {
         this.profileForm.patchValue({
@@ -164,6 +165,21 @@ export class ProfileComponent {
         });
       }
     });
+  }
+
+  ngOnInit(): void {
+    const u = this.authService.getCurrentUser();
+    if (this.isPlatformAdmin(u)) {
+      this.router.navigate(['/admin/dashboard']);
+    }
+  }
+
+  /** Platform admins use the admin console — no participant profile, user_type, or QR. */
+  private isPlatformAdmin(user: User | null): boolean {
+    if (!user) {
+      return false;
+    }
+    return user.isAdmin === true || user.accountType === AccountType.ADMIN;
   }
 
   // Helper to convert date from backend (object or string) to YYYY-MM-DD format for HTML date input
@@ -233,9 +249,9 @@ export class ProfileComponent {
         const refreshed: User = {
           ...this.currentUser!,
           ...updated,
-          // Ensure identity fields are never changed
           userType: this.currentUser!.userType,
-          role: this.currentUser!.role,
+          accountType: this.currentUser!.accountType,
+          isAdmin: this.currentUser!.isAdmin,
           badge: this.currentUser!.badge,
           points: this.currentUser!.points,
           userName: this.currentUser!.userName,

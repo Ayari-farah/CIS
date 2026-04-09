@@ -17,6 +17,7 @@ import java.util.List;
 @RequestMapping("/metrics")
 @RequiredArgsConstructor
 @Tag(name = "Impact Metrics", description = "Impact metrics management APIs")
+@PreAuthorize("hasRole('ADMIN')")
 public class ImpactMetricsController {
 
     private final ImpactMetricsService impactMetricsService;
@@ -60,7 +61,6 @@ public class ImpactMetricsController {
 
     @Operation(summary = "Recalculate metrics manually")
     @PostMapping("/recalculate")
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> calculateAndSaveDailyMetrics() {
         impactMetricsService.calculateAndSaveDailyMetrics();
         return ResponseEntity.ok().build();

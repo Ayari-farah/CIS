@@ -1,0 +1,50 @@
+<div class="min-h-screen bg-slate-100 px-4 py-8">
+  <div class="max-w-5xl mx-auto rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+    <div class="bg-slate-800 px-6 py-4 text-white">
+      <p class="text-xs font-bold uppercase tracking-wider text-slate-300">Post moderation</p>
+      <h1 class="text-xl font-bold">Pending review</h1>
+      <p class="text-slate-300 text-sm mt-1">Pending posts only — approve or reject.</p>
+    </div>
+    <div class="p-6">
+      <div *ngIf="errorMessage" class="mb-4 text-red-600 text-sm">{{ errorMessage }}</div>
+      <div *ngIf="isLoading" class="text-slate-500">Loading…</div>
+
+      <div *ngIf="!isLoading" class="rounded-xl border border-slate-200 overflow-hidden">
+        <table class="min-w-full text-sm">
+          <thead class="bg-slate-50 text-slate-600">
+            <tr>
+              <th class="text-left px-4 py-3 text-xs font-bold uppercase tracking-wide text-slate-500">Creator</th>
+              <th class="text-left px-4 py-3 text-xs font-bold uppercase tracking-wide text-slate-500">Type</th>
+              <th class="text-left px-4 py-3 text-xs font-bold uppercase tracking-wide text-slate-500">Content</th>
+              <th class="text-right px-4 py-3 text-xs font-bold uppercase tracking-wide text-slate-500">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let p of posts" class="border-t border-slate-100">
+              <td class="px-4 py-3">{{ p.creator }}</td>
+              <td class="px-4 py-3">{{ p.type }}</td>
+              <td class="px-4 py-3 max-w-md whitespace-pre-wrap">{{ p.content }}</td>
+              <td class="px-4 py-3 text-right space-x-2">
+                <button type="button"
+                        (click)="approve(p.id)"
+                        [disabled]="actionId === p.id"
+                        class="inline-flex px-4 py-2 rounded-full bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-700 disabled:opacity-50">
+                  Approve
+                </button>
+                <button type="button"
+                        (click)="reject(p.id)"
+                        [disabled]="actionId === p.id"
+                        class="inline-flex px-4 py-2 rounded-full bg-red-600 text-white text-xs font-bold hover:bg-red-700 disabled:opacity-50">
+                  Reject
+                </button>
+              </td>
+            </tr>
+            <tr *ngIf="posts.length === 0">
+              <td class="px-4 py-8 text-slate-400 text-center" colspan="4">No pending posts.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>

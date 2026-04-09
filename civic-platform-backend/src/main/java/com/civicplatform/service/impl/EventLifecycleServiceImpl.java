@@ -47,19 +47,15 @@ public class EventLifecycleServiceImpl implements EventLifecycleService {
                 continue;
             }
             User user = userRepository.findById(ep.getUser().getId()).orElseThrow();
+            if (user.isAdmin() || user.getUserType() == null) {
+                continue;
+            }
             if (user.getUserType() == UserType.DONOR || user.getUserType() == UserType.AMBASSADOR) {
                 continue;
             }
 
-            long attended = badgeService.countAttendedCompletedEvents(user.getId());
-            if (attended >= 5) {
-                if (user.getUserType() != UserType.AMBASSADOR) {
-                    user.setUserType(UserType.AMBASSADOR);
-                    userRepository.save(user);
-                    emailService.sendAmbassadorPromotionEmail(user.getEmail(), user.getUserName());
-                    log.info("User {} promoted to AMBASSADOR on event start (>=5 completed events)", user.getEmail());
-                }
-            } else if (user.getUserType() == UserType.CITIZEN) {
+            // Only CITIZEN becomes PARTICIPANT while an event is live; AMBASSADOR is set on completion (>=5 completed events).
+            if (user.getUserType() == UserType.CITIZEN) {
                 user.setUserType(UserType.PARTICIPANT);
                 userRepository.save(user);
             }
@@ -83,6 +79,10 @@ public class EventLifecycleServiceImpl implements EventLifecycleService {
                 continue;
             }
             User user = userRepository.findById(uid).orElseThrow();
+
+            if (user.isAdmin() || user.getUserType() == null) {
+                continue;
+            }
 
             if (user.getUserType() == UserType.DONOR) {
                 badgeService.applyBadgeForUser(user);

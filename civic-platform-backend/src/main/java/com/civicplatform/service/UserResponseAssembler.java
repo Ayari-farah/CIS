@@ -16,12 +16,34 @@ public class UserResponseAssembler {
     private final BadgeService badgeService;
 
     public UserResponse toUserResponse(User user) {
+        if (user.isAdmin()) {
+            return UserResponse.builder()
+                    .id(user.getId())
+                    .userName(user.getUserName())
+                    .email(user.getEmail())
+                    .admin(true)
+                    .userType(null)
+                    .createdAt(user.getCreatedAt())
+                    .build();
+        }
         UserResponse r = userMapper.toResponse(user);
         r.setBadgeProgress(computeProgress(user));
         return r;
     }
 
     public AuthResponse toAuthResponse(User user, String accessToken, String refreshToken) {
+        if (user.isAdmin()) {
+            return AuthResponse.builder()
+                    .token(accessToken)
+                    .refreshToken(refreshToken)
+                    .userId(user.getId())
+                    .userName(user.getUserName())
+                    .email(user.getEmail())
+                    .accountType("ADMIN")
+                    .createdAt(user.getCreatedAt())
+                    .build();
+        }
+
         Badge b = user.getBadge() != null ? user.getBadge() : Badge.NONE;
         return AuthResponse.builder()
                 .token(accessToken)
@@ -29,8 +51,8 @@ public class UserResponseAssembler {
                 .userId(user.getId())
                 .userName(user.getUserName())
                 .email(user.getEmail())
+                .accountType("USER")
                 .userType(user.getUserType())
-                .role(user.getRole())
                 .badge(user.getBadge())
                 .points(user.getPoints())
                 .awardedDate(user.getAwardedDate())

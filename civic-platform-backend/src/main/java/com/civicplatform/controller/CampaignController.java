@@ -6,6 +6,7 @@ import com.civicplatform.entity.User;
 import com.civicplatform.enums.CampaignStatus;
 import com.civicplatform.enums.UserType;
 import com.civicplatform.repository.UserRepository;
+import com.civicplatform.security.RegularAccountPolicy;
 import com.civicplatform.service.CampaignService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -33,6 +34,11 @@ public class CampaignController {
     @PostMapping
     public ResponseEntity<CampaignResponse> createCampaign(@Valid @RequestBody CampaignRequest campaignRequest, Authentication authentication) {
         User user = getUserFromAuthentication(authentication);
+        if (user.isAdmin()) {
+            CampaignResponse response = campaignService.createCampaign(campaignRequest, user.getId());
+            return new ResponseEntity<>(response, HttpStatus.CREATED);
+        }
+        RegularAccountPolicy.requireRegularUser(user);
         if (user.getUserType() != UserType.DONOR && user.getUserType() != UserType.AMBASSADOR) {
             throw new AccessDeniedException("Only DONOR and AMBASSADOR users can create campaigns");
         }
@@ -105,16 +111,18 @@ public class CampaignController {
     @Operation(summary = "Vote for campaign")
     @PostMapping("/{id}/vote")
     public ResponseEntity<Void> voteForCampaign(@PathVariable Long id, Authentication authentication) {
-        Long userId = getUserIdFromAuthentication(authentication);
-        campaignService.voteForCampaign(id, userId);
+        User user = getUserFromAuthentication(authentication);
+        RegularAccountPolicy.requireRegularUser(user);
+        campaignService.voteForCampaign(id, user.getId());
         return ResponseEntity.ok().build();
     }
 
     @Operation(summary = "Whether current user has voted for this campaign")
     @GetMapping("/{id}/has-voted")
     public ResponseEntity<Boolean> hasVoted(@PathVariable Long id, Authentication authentication) {
-        Long userId = getUserIdFromAuthentication(authentication);
-        return ResponseEntity.ok(campaignService.hasUserVoted(id, userId));
+        User user = getUserFromAuthentication(authentication);
+        RegularAccountPolicy.requireRegularUser(user);
+        return ResponseEntity.ok(campaignService.hasUserVoted(id, user.getId()));
     }
 
     @Operation(summary = "Activate campaigns ready for activation")
@@ -127,18 +135,14 @@ public class CampaignController {
 
     private void checkCampaignOwnership(Long campaignId, Authentication authentication) {
         User user = getUserFromAuthentication(authentication);
-        boolean isAdmin = user.getAuthorities().stream()
-                .anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority()));
-        if (!isAdmin) {
-            CampaignResponse campaign = campaignService.getCampaignById(campaignId);
-            if (campaign.getCreatedById() == null || !user.getId().equals(campaign.getCreatedById())) {
-                throw new AccessDeniedException("You are not the owner of this campaign");
-            }
+        if (user.isAdmin()) {
+            return;
         }
-    }
-
-    private Long getUserIdFromAuthentication(Authentication authentication) {
-        return getUserFromAuthentication(authentication).getId();
+        RegularAccountPolicy.requireRegularUser(user);
+        CampaignResponse campaign = campaignService.getCampaignById(campaignId);
+        if (campaign.getCreatedById() == null || !user.getId().equals(campaign.getCreatedById())) {
+            throw new AccessDeniedException("You are not the owner of this campaign");
+        }
     }
 
     private User getUserFromAuthentication(Authentication authentication) {

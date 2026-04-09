@@ -3,11 +3,11 @@
 
     <!-- Breadcrumb -->
     <nav class="flex items-center space-x-2 text-sm text-gray-500 mb-6">
-      <a routerLink="/dashboard" class="hover:text-emerald-600 transition-colors">Dashboard</a>
+      <a [routerLink]="isAdminRoute() ? '/admin/dashboard' : '/dashboard'" class="hover:text-emerald-600 transition-colors">Dashboard</a>
       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
       </svg>
-      <a routerLink="/projects" class="hover:text-emerald-600 transition-colors">Projects</a>
+      <a [routerLink]="projectsListPath()" class="hover:text-emerald-600 transition-colors">Projects</a>
       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
       </svg>

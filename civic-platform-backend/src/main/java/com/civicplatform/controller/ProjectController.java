@@ -7,6 +7,7 @@ import com.civicplatform.dto.response.ProjectResponse;
 import com.civicplatform.entity.User;
 import com.civicplatform.enums.UserType;
 import com.civicplatform.repository.UserRepository;
+import com.civicplatform.security.RegularAccountPolicy;
 import com.civicplatform.service.ProjectService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -15,7 +16,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
@@ -34,6 +34,7 @@ public class ProjectController {
     @PostMapping
     public ResponseEntity<ProjectResponse> createProject(@Valid @RequestBody ProjectRequest projectRequest, Authentication authentication) {
         User user = getUserFromAuthentication(authentication);
+        RegularAccountPolicy.requireRegularUser(user);
         if (user.getUserType() != UserType.DONOR && user.getUserType() != UserType.AMBASSADOR) {
             throw new AccessDeniedException("Only DONOR and AMBASSADOR users can create projects");
         }
@@ -46,8 +47,9 @@ public class ProjectController {
     @Operation(summary = "Get my project donations (funding history)")
     @GetMapping("/my-fundings")
     public ResponseEntity<List<ProjectFundingResponse>> getMyFundings(Authentication authentication) {
-        Long userId = getUserIdFromAuthentication(authentication);
-        List<ProjectFundingResponse> response = projectService.getFundingsByUser(userId);
+        User user = getUserFromAuthentication(authentication);
+        RegularAccountPolicy.requireRegularUser(user);
+        List<ProjectFundingResponse> response = projectService.getFundingsByUser(user.getId());
         return ResponseEntity.ok(response);
     }
 
@@ -68,8 +70,9 @@ public class ProjectController {
     @Operation(summary = "Whether current user has voted for this project")
     @GetMapping("/{id}/has-voted")
     public ResponseEntity<Boolean> hasVoted(@PathVariable Long id, Authentication authentication) {
-        Long userId = getUserIdFromAuthentication(authentication);
-        return ResponseEntity.ok(projectService.hasUserVoted(id, userId));
+        User user = getUserFromAuthentication(authentication);
+        RegularAccountPolicy.requireRegularUser(user);
+        return ResponseEntity.ok(projectService.hasUserVoted(id, user.getId()));
     }
 
     @Operation(summary = "Get project by ID")
@@ -82,7 +85,7 @@ public class ProjectController {
     @Operation(summary = "Update project")
     @PutMapping("/{id}")
     public ResponseEntity<ProjectResponse> updateProject(@PathVariable Long id, @Valid @RequestBody ProjectRequest projectRequest, Authentication authentication) {
-        checkAdminOrDonorAmbassador(authentication);
+        checkDonorAmbassadorOwner(authentication);
         ProjectResponse response = projectService.updateProject(id, projectRequest);
         return ResponseEntity.ok(response);
     }
@@ -90,7 +93,7 @@ public class ProjectController {
     @Operation(summary = "Delete project")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteProject(@PathVariable Long id, Authentication authentication) {
-        checkAdminOrDonorAmbassador(authentication);
+        checkDonorAmbassadorOwner(authentication);
         projectService.deleteProject(id);
         return ResponseEntity.noContent().build();
     }
@@ -98,39 +101,37 @@ public class ProjectController {
     @Operation(summary = "Vote for project")
     @PostMapping("/{id}/vote")
     public ResponseEntity<Void> voteForProject(@PathVariable Long id, Authentication authentication) {
-        Long userId = getUserIdFromAuthentication(authentication);
-        projectService.voteForProject(id, userId);
+        User user = getUserFromAuthentication(authentication);
+        RegularAccountPolicy.requireRegularUser(user);
+        projectService.voteForProject(id, user.getId());
         return ResponseEntity.ok().build();
     }
 
     @Operation(summary = "Fund project")
     @PostMapping("/{id}/fund")
     public ResponseEntity<Void> fundProject(@PathVariable Long id, @Valid @RequestBody ProjectFundingRequest fundingRequest, Authentication authentication) {
-        Long userId = getUserIdFromAuthentication(authentication);
+        User user = getUserFromAuthentication(authentication);
+        RegularAccountPolicy.requireRegularUser(user);
         fundingRequest.setProjectId(id);
-        projectService.fundProject(fundingRequest, userId);
+        projectService.fundProject(fundingRequest, user.getId());
         return ResponseEntity.ok().build();
     }
 
     @Operation(summary = "Complete project")
     @PostMapping("/{id}/complete")
     public ResponseEntity<ProjectResponse> completeProject(@PathVariable Long id, @RequestParam String finalReport, Authentication authentication) {
-        checkAdminOrDonorAmbassador(authentication);
+        checkDonorAmbassadorOwner(authentication);
         ProjectResponse response = projectService.completeProject(id, finalReport);
         return ResponseEntity.ok(response);
     }
 
-    private void checkAdminOrDonorAmbassador(Authentication authentication) {
+    /** Project mutations (update/delete/complete) — regular DONOR or AMBASSADOR only (same as creation rules). */
+    private void checkDonorAmbassadorOwner(Authentication authentication) {
         User user = getUserFromAuthentication(authentication);
-        boolean isAdmin = user.getAuthorities().stream()
-                .anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority()));
-        if (!isAdmin && user.getUserType() != UserType.DONOR && user.getUserType() != UserType.AMBASSADOR) {
-            throw new AccessDeniedException("Only ADMIN, DONOR, or AMBASSADOR can perform this action");
+        RegularAccountPolicy.requireRegularUser(user);
+        if (user.getUserType() != UserType.DONOR && user.getUserType() != UserType.AMBASSADOR) {
+            throw new AccessDeniedException("Only DONOR or AMBASSADOR can perform this action");
         }
-    }
-
-    private Long getUserIdFromAuthentication(Authentication authentication) {
-        return getUserFromAuthentication(authentication).getId();
     }
 
     private User getUserFromAuthentication(Authentication authentication) {

@@ -4,6 +4,7 @@ import com.civicplatform.dto.request.CommentRequest;
 import com.civicplatform.dto.response.CommentResponse;
 import com.civicplatform.entity.User;
 import com.civicplatform.repository.UserRepository;
+import com.civicplatform.security.RegularAccountPolicy;
 import com.civicplatform.service.CommentService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -11,7 +12,6 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
@@ -29,7 +29,9 @@ public class CommentController {
     @Operation(summary = "Create a new comment")
     @PostMapping
     public ResponseEntity<CommentResponse> createComment(@Valid @RequestBody CommentRequest commentRequest, Authentication authentication) {
-        Long userId = getUserIdFromAuthentication(authentication);
+        User user = getUserFromAuthentication(authentication);
+        RegularAccountPolicy.requireRegularUser(user);
+        Long userId = user.getId();
         CommentResponse response = commentService.createComment(commentRequest, userId);
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
@@ -74,20 +76,15 @@ public class CommentController {
     private void checkCommentOwnership(Long commentId, Authentication authentication) {
         User user = userRepository.findByEmail(authentication.getName())
                 .orElseThrow(() -> new RuntimeException("Authenticated user not found"));
-        boolean isAdmin = user.getAuthorities().stream()
-                .anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority()));
-        if (!isAdmin) {
-            CommentResponse comment = commentService.getCommentById(commentId);
-            if (!authentication.getName().equals(comment.getAuthorEmail())) {
-                throw new org.springframework.security.access.AccessDeniedException("You are not the author of this comment");
-            }
+        RegularAccountPolicy.requireRegularUser(user);
+        CommentResponse comment = commentService.getCommentById(commentId);
+        if (!authentication.getName().equals(comment.getAuthorEmail())) {
+            throw new org.springframework.security.access.AccessDeniedException("You are not the author of this comment");
         }
     }
 
-    private Long getUserIdFromAuthentication(Authentication authentication) {
-        String email = authentication.getName();
-        User user = userRepository.findByEmail(email)
+    private User getUserFromAuthentication(Authentication authentication) {
+        return userRepository.findByEmail(authentication.getName())
                 .orElseThrow(() -> new RuntimeException("Authenticated user not found"));
-        return user.getId();
     }
 }

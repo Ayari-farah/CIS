@@ -1,7 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { EventsService, Event } from '@core/services/events.service';
+import { AuthService } from '@core/services/auth.service';
 
 @Component({
   selector: 'app-events',
@@ -15,7 +16,31 @@ export class EventsComponent implements OnInit {
   isLoading = false;
   errorMessage = '';
 
-  constructor(private eventsService: EventsService) {}
+  constructor(
+    private eventsService: EventsService,
+    private authService: AuthService,
+    private router: Router
+  ) {}
+
+  canCreateEvent(): boolean {
+    return this.authService.canCreateContent();
+  }
+
+  showNewEventButton(): boolean {
+    return this.canCreateEvent() || (this.isAdminRoute() && this.authService.isAdmin());
+  }
+
+  newEventPath(): string {
+    return this.isAdminRoute() ? '/admin/events/new' : '/events/new';
+  }
+
+  isAdminRoute(): boolean {
+    return this.router.url.split('?')[0].startsWith('/admin');
+  }
+
+  eventDetailLink(id: number): (string | number)[] {
+    return this.isAdminRoute() ? ['/admin/events', id] : ['/events', id];
+  }
 
   ngOnInit(): void {
     this.loadEvents();

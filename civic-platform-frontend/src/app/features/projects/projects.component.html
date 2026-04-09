@@ -1,6 +1,12 @@
-<div class="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-emerald-50 py-8 px-4 sm:px-6 lg:px-8">
-  <div class="w-full max-w-7xl">
-    <div class="flex flex-col gap-1 mb-6">
+<div [ngClass]="isAdminRoute() ? 'min-h-screen bg-slate-100 py-8 px-4 sm:px-6 lg:px-8' : 'min-h-screen bg-gradient-to-br from-emerald-50 via-white to-emerald-50 py-8 px-4 sm:px-6 lg:px-8'">
+  <div [ngClass]="isAdminRoute() ? 'w-full max-w-7xl mx-auto rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden' : 'w-full max-w-7xl'">
+    <div *ngIf="isAdminRoute()" class="bg-slate-800 px-6 py-4 text-white">
+      <p class="text-xs font-bold uppercase tracking-wider text-slate-300">Projets</p>
+      <h1 class="text-xl font-bold">Community projects</h1>
+      <p class="text-slate-300 text-sm mt-1">Review funding progress and votes — aligned with the admin Reports shell.</p>
+    </div>
+    <div [ngClass]="isAdminRoute() ? 'p-6' : ''">
+    <div *ngIf="!isAdminRoute()" class="flex flex-col gap-1 mb-6">
       <h1 class="text-3xl font-bold text-gray-900 tracking-tight">Projets</h1>
       <p class="text-gray-500 text-sm">
         Soutenez des initiatives locales — un vote par projet et par utilisateur.
@@ -93,7 +99,9 @@
         <a
           *ngIf="canCreateProject()"
           routerLink="/projects/new"
-          class="inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 transition-colors"
+          [ngClass]="isAdminRoute()
+            ? 'inline-flex items-center px-6 py-3 rounded-xl font-bold text-sm text-white bg-slate-800 hover:bg-slate-900 transition-colors'
+            : 'inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 transition-colors'"
         >
           + Nouveau projet
         </a>
@@ -102,7 +110,8 @@
 
     <div *ngIf="isLoading" class="flex justify-center items-center py-16">
       <div
-        class="inline-block animate-spin rounded-full h-10 w-10 border-b-2 border-emerald-600"
+        class="inline-block animate-spin rounded-full h-10 w-10 border-b-2"
+        [ngClass]="isAdminRoute() ? 'border-slate-600' : 'border-emerald-600'"
       ></div>
     </div>
 
@@ -120,7 +129,9 @@
     >
       <div
         *ngFor="let project of filteredProjects"
-        class="bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow border border-gray-100 overflow-hidden flex flex-col group"
+        [ngClass]="isAdminRoute()
+          ? 'bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow border border-slate-200 overflow-hidden flex flex-col group'
+          : 'bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow border border-gray-100 overflow-hidden flex flex-col group'"
       >
         <div
           [class]="
@@ -233,8 +244,10 @@
               }}
             </button>
             <a
-              [routerLink]="['/projects', project.id]"
-              class="text-center text-sm font-medium text-emerald-700 hover:text-emerald-800 py-1"
+              [routerLink]="projectDetailLink(project.id)"
+              [ngClass]="isAdminRoute()
+                ? 'text-center text-sm font-bold text-slate-800 hover:text-slate-950 py-1'
+                : 'text-center text-sm font-medium text-emerald-700 hover:text-emerald-800 py-1'"
             >
               Voir le détail →
             </a>
@@ -271,10 +284,13 @@
       <a
         *ngIf="canCreateProject()"
         routerLink="/projects/new"
-        class="inline-flex items-center px-4 py-2 rounded-lg text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700"
+        [ngClass]="isAdminRoute()
+          ? 'inline-flex items-center px-6 py-3 rounded-xl font-bold text-sm text-white bg-slate-800 hover:bg-slate-900'
+          : 'inline-flex items-center px-4 py-2 rounded-lg text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700'"
       >
         Créer un projet
       </a>
+    </div>
     </div>
   </div>
 </div>

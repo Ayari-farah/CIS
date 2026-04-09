@@ -79,7 +79,7 @@ export class AppComponent {
   }
 
   isAdmin(): boolean {
-    return this.authService.hasRole('ADMIN');
+    return this.authService.isAdmin();
   }
 
   /** Login/register are full-screen: no top nav or sidebar (even if a session exists). */

@@ -6,6 +6,7 @@ import com.civicplatform.dto.response.UserResponse;
 import com.civicplatform.enums.UserType;
 import com.civicplatform.entity.User;
 import com.civicplatform.repository.UserRepository;
+import com.civicplatform.security.RegularAccountPolicy;
 import com.civicplatform.service.QrCodeService;
 import com.civicplatform.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -35,16 +36,21 @@ public class UserController {
 
     @Operation(summary = "Create a new user")
     @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<UserResponse> createUser(@Valid @RequestBody UserRequest userRequest) {
         UserResponse response = userService.createUser(userRequest);
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
-    @Operation(summary = "Get current authenticated user")
+    @Operation(summary = "Get current authenticated regular user profile (not for platform admins)")
     @GetMapping("/me")
     public ResponseEntity<UserResponse> getCurrentUser(Authentication authentication) {
-        UserResponse response = userService.getUserByEmail(authentication.getName());
-        return ResponseEntity.ok(response);
+        User user = userRepository.findByEmail(authentication.getName())
+                .orElseThrow(() -> new AccessDeniedException("User not resolved"));
+        if (user.isAdmin()) {
+            throw new AccessDeniedException("Platform admin accounts do not have a participant profile. Use admin tools.");
+        }
+        return ResponseEntity.ok(userService.getUserByEmail(user.getEmail()));
     }
 
     @Operation(summary = "Download PNG QR code with user identity JSON")
@@ -52,9 +58,8 @@ public class UserController {
     public ResponseEntity<byte[]> getUserQrCode(@PathVariable Long id, Authentication authentication) {
         User authUser = userRepository.findByEmail(authentication.getName())
                 .orElseThrow(() -> new AccessDeniedException("User not resolved"));
-        boolean isAdmin = authUser.getAuthorities().stream()
-                .anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority()));
-        if (!isAdmin && !authUser.getId().equals(id)) {
+        RegularAccountPolicy.requireRegularUser(authUser);
+        if (!authUser.getId().equals(id)) {
             throw new AccessDeniedException("You can only access your own QR code");
         }
         byte[] qrCode = qrCodeService.generateQrCode(id);
@@ -66,12 +71,13 @@ public class UserController {
 
     @Operation(summary = "Get user by email")
     @GetMapping("/email/{email}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<UserResponse> getUserByEmail(@PathVariable String email) {
         UserResponse response = userService.getUserByEmail(email);
         return ResponseEntity.ok(response);
     }
 
-    @Operation(summary = "Get all users")
+    @Operation(summary = "Get all regular users")
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<UserResponse>> getAllUsers() {
@@ -81,27 +87,28 @@ public class UserController {
 
     @Operation(summary = "Get users by type")
     @GetMapping("/type/{userType}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<UserResponse>> getUsersByType(@PathVariable UserType userType) {
         List<UserResponse> response = userService.getUsersByType(userType);
         return ResponseEntity.ok(response);
     }
 
-    @Operation(summary = "Get user by ID")
+    @Operation(summary = "Get user by ID (self or platform admin)")
     @GetMapping("/{id}")
-    public ResponseEntity<UserResponse> getUserById(@PathVariable Long id) {
+    public ResponseEntity<UserResponse> getUserById(@PathVariable Long id, Authentication authentication) {
+        User authUser = userRepository.findByEmail(authentication.getName())
+                .orElseThrow(() -> new AccessDeniedException("User not resolved"));
+        if (!authUser.isAdmin() && !authUser.getId().equals(id)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
         UserResponse response = userService.getUserById(id);
         return ResponseEntity.ok(response);
     }
 
     @Operation(summary = "Update user")
     @PutMapping("/{id}")
-    public ResponseEntity<UserResponse> updateUser(@PathVariable Long id, @RequestBody UserRequest userRequest, Authentication authentication) {
-        UserResponse current = userService.getUserById(id);
-        boolean isAdmin = authentication.getAuthorities().stream()
-                .anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority()));
-        if (!isAdmin && !authentication.getName().equalsIgnoreCase(current.getEmail())) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-        }
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<UserResponse> updateUser(@PathVariable Long id, @RequestBody UserRequest userRequest) {
         UserResponse response = userService.updateUser(id, userRequest);
         return ResponseEntity.ok(response);
     }
@@ -109,10 +116,13 @@ public class UserController {
     @Operation(summary = "Update user profile")
     @PutMapping("/{id}/profile")
     public ResponseEntity<UserResponse> updateProfile(@PathVariable Long id, @Valid @RequestBody ProfileUpdateRequest request, Authentication authentication) {
+        User authUser = userRepository.findByEmail(authentication.getName())
+                .orElseThrow(() -> new AccessDeniedException("User not resolved"));
+        if (authUser.isAdmin()) {
+            throw new AccessDeniedException("Admins do not have participant profiles.");
+        }
         UserResponse current = userService.getUserById(id);
-        boolean isAdmin = authentication.getAuthorities().stream()
-                .anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority()));
-        if (!isAdmin && !authentication.getName().equalsIgnoreCase(current.getEmail())) {
+        if (!authentication.getName().equalsIgnoreCase(current.getEmail())) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
         UserResponse response = userService.updateProfile(id, request);
@@ -137,6 +147,7 @@ public class UserController {
 
     @Operation(summary = "Get user count by type")
     @GetMapping("/count/{userType}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Long> countUsersByType(@PathVariable UserType userType) {
         Long count = userService.countUsersByType(userType);
         return ResponseEntity.ok(count);

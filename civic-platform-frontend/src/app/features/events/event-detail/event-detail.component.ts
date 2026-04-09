@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ActivatedRoute, RouterModule } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { AuthService } from '@core/services/auth.service';
 import { EventsService, Event, EventStatus } from '@core/services/events.service';
 
@@ -25,11 +25,71 @@ export class EventDetailComponent implements OnInit {
   isRegistered = false;
   registrationStatus: string | null = null;
 
+  showDeleteModal = false;
+  deleteLoading = false;
+
   constructor(
     private route: ActivatedRoute,
+    private router: Router,
     private eventsService: EventsService,
     private authService: AuthService
   ) {}
+
+  isAdminRoute(): boolean {
+    return this.router.url.split('?')[0].startsWith('/admin');
+  }
+
+  eventsListPath(): string {
+    return this.isAdminRoute() ? '/admin/events' : '/events';
+  }
+
+  /** Platform admins review events; they do not register as participants. */
+  showParticipantRegistration(): boolean {
+    return !this.authService.isAdmin();
+  }
+
+  isPlatformAdmin(): boolean {
+    return this.authService.isAdmin();
+  }
+
+  /** Organizer or platform admin may change event lifecycle. */
+  canManageEventLifecycle(): boolean {
+    return this.isOrganizer() || this.isPlatformAdmin();
+  }
+
+  editEventLink(): (string | number)[] {
+    if (!this.event) {
+      return [this.eventsListPath()];
+    }
+    return this.isAdminRoute()
+      ? ['/admin/events', this.event.id, 'edit']
+      : ['/events', this.event.id, 'edit'];
+  }
+
+  openDeleteModal(): void {
+    this.showDeleteModal = true;
+  }
+
+  cancelDelete(): void {
+    this.showDeleteModal = false;
+  }
+
+  confirmDelete(): void {
+    if (!this.event) {
+      return;
+    }
+    this.deleteLoading = true;
+    this.eventsService.deleteEvent(this.event.id).subscribe({
+      next: () => {
+        this.router.navigateByUrl(this.eventsListPath());
+      },
+      error: (err) => {
+        this.actionMessage = err.error?.message || 'Could not delete event';
+        this.deleteLoading = false;
+        this.showDeleteModal = false;
+      }
+    });
+  }
 
   ngOnInit(): void {
     const id = this.route.snapshot.paramMap.get('id');
@@ -45,7 +105,12 @@ export class EventDetailComponent implements OnInit {
       next: (event) => {
         this.event = event;
         this.isLoading = false;
-        this.loadRegistrationStatus(id);
+        if (this.showParticipantRegistration()) {
+          this.loadRegistrationStatus(id);
+        } else {
+          this.isRegistered = false;
+          this.registrationStatus = null;
+        }
       },
       error: (error) => {
         this.errorMessage = error.error?.message || 'Failed to load event';
@@ -120,7 +185,9 @@ export class EventDetailComponent implements OnInit {
         this.event = ev;
         this.statusLoading = false;
         this.actionMessage = 'Event status updated.';
-        this.loadRegistrationStatus(ev.id);
+        if (this.showParticipantRegistration()) {
+          this.loadRegistrationStatus(ev.id);
+        }
       },
       error: (err) => {
         this.statusLoading = false;

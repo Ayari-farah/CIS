@@ -6,7 +6,7 @@ import com.civicplatform.dto.request.UserRequest;
 import com.civicplatform.dto.response.AuthResponse;
 import com.civicplatform.entity.RefreshToken;
 import com.civicplatform.entity.User;
-import com.civicplatform.enums.Role;
+import com.civicplatform.enums.Badge;
 import com.civicplatform.mapper.UserMapper;
 import com.civicplatform.repository.RefreshTokenRepository;
 import com.civicplatform.repository.UserRepository;
@@ -41,7 +41,6 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional
     public AuthResponse register(UserRequest userRequest) {
-        // Check if user already exists
         if (userRepository.existsByEmail(userRequest.getEmail())) {
             throw new RuntimeException("Email already exists");
         }
@@ -49,17 +48,18 @@ public class AuthServiceImpl implements AuthService {
             throw new RuntimeException("Username already exists");
         }
 
-        // Create new user
         User user = userMapper.toEntityForCreate(userRequest);
         user.setPassword(passwordEncoder.encode(userRequest.getPassword()));
-        // Always hardcode these fields on registration - ignore any values in request
-        user.setRole(Role.USER);
-        user.setBadge(null);
-        user.setPoints(0);
+        user.setAdmin(false);
+        if (user.getPoints() == null) {
+            user.setPoints(0);
+        }
+        if (user.getBadge() == null) {
+            user.setBadge(Badge.NONE);
+        }
 
         user = userRepository.save(user);
 
-        // Generate tokens
         String accessToken = jwtService.generateAccessToken(user);
         String refreshToken = generateRefreshToken(user);
 
@@ -80,8 +80,7 @@ public class AuthServiceImpl implements AuthService {
         User user = userRepository.findByEmail(userDetails.getUsername())
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        // Generate tokens
-        String accessToken = jwtService.generateAccessToken(userDetails);
+        String accessToken = jwtService.generateAccessToken(user);
         String refreshToken = generateRefreshToken(user);
 
         return buildAuthResponse(user, accessToken, refreshToken);
@@ -91,7 +90,7 @@ public class AuthServiceImpl implements AuthService {
     @Transactional
     public AuthResponse refreshToken(RefreshTokenRequest refreshTokenRequest) {
         String refreshToken = refreshTokenRequest.getRefreshToken();
-        
+
         RefreshToken tokenEntity = refreshTokenRepository.findByToken(refreshToken)
                 .orElseThrow(() -> new BadCredentialsException("Invalid refresh token"));
 
@@ -101,14 +100,7 @@ public class AuthServiceImpl implements AuthService {
         }
 
         User user = tokenEntity.getUser();
-        UserDetails userDetails = org.springframework.security.core.userdetails.User.builder()
-                .username(user.getEmail())
-                .password(user.getPassword())
-                .authorities("ROLE_" + user.getRole().name())
-                .build();
-
-        // Generate new access token
-        String newAccessToken = jwtService.generateAccessToken(userDetails);
+        String newAccessToken = jwtService.generateAccessToken(user);
 
         return buildAuthResponse(user, newAccessToken, refreshToken);
     }
@@ -122,7 +114,7 @@ public class AuthServiceImpl implements AuthService {
 
     private String generateRefreshToken(User user) {
         String token = UUID.randomUUID().toString();
-        LocalDateTime expiryDate = LocalDateTime.now().plusDays(7); // 7 days
+        LocalDateTime expiryDate = LocalDateTime.now().plusDays(7);
 
         RefreshToken refreshToken = RefreshToken.builder()
                 .token(token)

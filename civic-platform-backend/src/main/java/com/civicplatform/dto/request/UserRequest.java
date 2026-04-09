@@ -1,7 +1,6 @@
 package com.civicplatform.dto.request;
 
 import com.civicplatform.enums.Badge;
-import com.civicplatform.enums.Role;
 import com.civicplatform.enums.UserType;
 import com.civicplatform.validator.ValidUser;
 import jakarta.validation.constraints.Email;
@@ -34,9 +33,6 @@ public class UserRequest {
     
     @NotNull(message = "User type is required")
     private UserType userType;
-    
-    @Builder.Default
-    private Role role = Role.USER;
     
     // AMBASSADOR fields
     private Badge badge;

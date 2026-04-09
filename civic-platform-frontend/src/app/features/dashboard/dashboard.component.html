@@ -10,8 +10,15 @@
             </div>
             <div>
               <h1 class="text-2xl font-bold text-gray-900">Welcome, {{ getUserName() }}!</h1>
-              <div class="flex items-center mt-1 space-x-2">
-                <span class="text-sm text-gray-500">{{ getUserType() }}</span>
+              <p class="text-xs text-gray-400 mt-0.5">Your username is not your access level.</p>
+              <div class="flex flex-wrap items-center gap-x-2 gap-y-1 mt-1">
+                <span class="text-sm text-gray-600">
+                  <span class="font-semibold text-gray-700">User type:</span> {{ getUserType() || '—' }}
+                </span>
+                <span class="text-gray-300 hidden sm:inline">|</span>
+                <span class="text-sm text-gray-600">
+                  <span class="font-semibold text-gray-700">Account:</span> member
+                </span>
                 <app-badge [badge]="getUserBadge()" [awardedDate]="getAwardedDate()" size="sm"></app-badge>
               </div>
             </div>
@@ -79,7 +86,7 @@
   </div>
 
   <!-- DONOR TABS CONTENT -->
-  <div *ngIf="!isLoading && !error && isDonor()" class="w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
+  <div *ngIf="!isLoading && !error && canCreateContent()" class="w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
 
     <!-- My Campaigns Tab -->
     <div *ngIf="isActiveTab('campaigns')" class="space-y-6">
@@ -229,7 +236,7 @@
 
     <!-- Impact Stats Tab -->
     <div *ngIf="isActiveTab('impact')" class="space-y-6">
-      <h2 class="text-2xl font-bold text-gray-900">Impact Statistics</h2>
+      <h2 class="text-2xl font-bold text-gray-900">My impact (your campaigns &amp; events)</h2>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg p-8 text-white">
           <div class="flex items-center justify-between">
@@ -307,7 +314,7 @@
   </div>
 
   <!-- CITIZEN/PARTICIPANT/AMBASSADOR TABS CONTENT -->
-  <div *ngIf="!isLoading && !error && !isDonor()" class="w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
+  <div *ngIf="!isLoading && !error && !canCreateContent()" class="w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
 
     <!-- Feed Tab -->
     <div *ngIf="isActiveTab('feed')" class="space-y-6">

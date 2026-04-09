@@ -99,8 +99,7 @@ export class MetricsComponent implements OnInit {
           const link = document.createElement('a');
           link.href = url;
           const ext = this.reportFormat === 'pdf' ? 'pdf' : 'csv';
-          const typePart = this.reportType ? `-${this.reportType}` : '';
-          link.download = `report-${this.reportFrom}-to-${this.reportTo}${typePart}.${ext}`;
+          link.download = `nurtriflow-CIS-report.${ext}`;
           link.click();
           window.URL.revokeObjectURL(url);
           this.reportDownloading = false;

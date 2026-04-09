@@ -48,7 +48,13 @@ export class LoginComponent {
 
     this.authService.login(loginRequest).subscribe({
       next: () => {
-        this.router.navigateByUrl(this.returnUrl);
+        if (this.authService.isAdmin()) {
+          this.router.navigateByUrl('/admin/dashboard');
+          return;
+        }
+        const dest =
+          this.returnUrl.startsWith('/admin') ? '/dashboard' : this.returnUrl;
+        this.router.navigateByUrl(dest);
       },
       error: (error) => {
         console.error('Login error:', error);

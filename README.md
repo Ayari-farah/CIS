@@ -108,7 +108,7 @@ PI-CIS/
 
 ### 🔐 Authentication & Authorization
 - JWT-based authentication with refresh tokens
-- Role-based access control (ADMIN, MODERATOR, USER)
+- Role-based access control: **USER** and **ADMIN** only (separate from `user_type`)
 - Multiple user types: Ambassador, Donor, Citizen, Participant
 - Custom validation for user registration
 
@@ -194,10 +194,9 @@ PI-CIS/
 - **CITIZEN**: Regular community members
 - **PARTICIPANT**: Event participants with points
 
-### Roles
-- **ADMIN**: Full system access
-- **MODERATOR**: Content moderation
-- **USER**: Standard user access
+### Roles (Spring `role` — not `user_type`)
+- **ADMIN**: Full system access (moderation, reports, metrics, user management)
+- **USER**: Default at registration; normal authenticated access
 
 ## 📧 Development
 

@@ -1,8 +1,8 @@
 package com.civicplatform.dto.response;
 
 import com.civicplatform.enums.Badge;
-import com.civicplatform.enums.Role;
 import com.civicplatform.enums.UserType;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -21,7 +21,10 @@ public class UserResponse {
     private String userName;
     private String email;
     private UserType userType;
-    private Role role;
+
+    @JsonProperty("isAdmin")
+    private boolean admin;
+
     private LocalDateTime createdAt;
     
     // AMBASSADOR fields

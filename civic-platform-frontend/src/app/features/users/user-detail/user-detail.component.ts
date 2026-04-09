@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ActivatedRoute, RouterModule } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { UsersService } from '@core/services/users.service';
 import { User } from '@core/models/auth.models';
 
@@ -18,8 +18,13 @@ export class UserDetailComponent implements OnInit {
 
   constructor(
     private route: ActivatedRoute,
+    private router: Router,
     private usersService: UsersService
   ) {}
+
+  backLink(): string {
+    return this.router.url.split('?')[0].startsWith('/admin') ? '/admin/users' : '/dashboard';
+  }
 
   ngOnInit(): void {
     const id = this.route.snapshot.paramMap.get('id');

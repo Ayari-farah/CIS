@@ -1,6 +1,6 @@
 import { ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { forkJoin, of, Subscription } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
@@ -34,8 +34,17 @@ export class ProjectsComponent implements OnInit, OnDestroy {
     public readonly voteState: ProjectVoteStateService,
     private projectsService: ProjectsService,
     private authService: AuthService,
-    private cd: ChangeDetectorRef
+    private cd: ChangeDetectorRef,
+    private router: Router
   ) {}
+
+  isAdminRoute(): boolean {
+    return this.router.url.split('?')[0].startsWith('/admin');
+  }
+
+  projectDetailLink(id: number): (string | number)[] {
+    return this.isAdminRoute() ? ['/admin/projects', id] : ['/projects', id];
+  }
 
   ngOnInit(): void {
     this.voteSub = this.voteState.changes.subscribe(() => this.cd.markForCheck());
@@ -47,7 +56,7 @@ export class ProjectsComponent implements OnInit, OnDestroy {
   }
 
   canCreateProject(): boolean {
-    return this.authService.isDonor() || this.authService.isAmbassador();
+    return this.authService.canCreateContent();
   }
 
   get filteredProjects(): Project[] {

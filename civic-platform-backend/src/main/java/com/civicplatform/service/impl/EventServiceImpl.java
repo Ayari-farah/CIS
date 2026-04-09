@@ -112,6 +112,11 @@ public class EventServiceImpl implements EventService {
         }
         event.setStatus(newStatus);
         event = eventRepository.save(event);
+
+        if (newStatus == EventStatus.COMPLETED) {
+            finalizeParticipationsForCompletedEvent(id);
+        }
+
         handleEventStatusTransition(event.getId(), oldStatus, event.getStatus());
 
         if (newStatus == EventStatus.CANCELLED) {
@@ -123,6 +128,20 @@ public class EventServiceImpl implements EventService {
         }
 
         return eventMapper.toResponse(event);
+    }
+
+    /**
+     * When an event is marked COMPLETED, mark active participations as COMPLETED so attendance counts
+     * and lifecycle (user_type) see this event as a finished attendance.
+     */
+    private void finalizeParticipationsForCompletedEvent(Long eventId) {
+        List<EventParticipant> participants = eventParticipantRepository.findByEventIdOrderByRegisteredAtAsc(eventId);
+        for (EventParticipant ep : participants) {
+            if (ep.getStatus() == ParticipantStatus.REGISTERED || ep.getStatus() == ParticipantStatus.CHECKED_IN) {
+                ep.complete();
+            }
+        }
+        eventParticipantRepository.saveAll(participants);
     }
 
     private void handleEventStatusTransition(Long eventId, EventStatus oldStatus, EventStatus newStatus) {

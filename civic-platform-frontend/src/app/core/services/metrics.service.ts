@@ -3,19 +3,17 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
 export interface DashboardStats {
-  totalUsers: number;
-  totalProjects: number;
-  totalEvents: number;
-  totalCampaigns: number;
-  totalPosts: number;
-  activeVolunteers: number;
-  totalFundingAmount: number;
-  monthlyDonations: number;
-  mostActiveRegion?: string;
-  totalMealsDistributed?: number;
   totalUsersByType?: Record<string, number>;
-  totalCo2Saved?: number;
   totalCampaignsByStatus?: Record<string, number>;
+  totalFundingAmount?: number;
+  totalCo2Saved?: number;
+  totalMealsDistributed?: number;
+  mostActiveRegion?: string;
+  totalProjects?: number;
+  totalEvents?: number;
+  activeVolunteers?: number;
+  activeDonors?: number;
+  activeAssociations?: number;
 }
 
 export interface ImpactMetrics {

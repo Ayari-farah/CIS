@@ -1,0 +1,64 @@
+<div [ngClass]="isAdminRoute() ? 'min-h-screen bg-slate-100 px-4 py-8' : 'min-h-screen bg-gradient-to-br from-amber-50 via-white to-emerald-50 py-8 px-4'">
+  <div [ngClass]="isAdminRoute() ? 'max-w-2xl mx-auto rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden' : 'max-w-2xl mx-auto p-6'">
+    <div *ngIf="isAdminRoute()" class="bg-slate-800 px-6 py-4 text-white">
+      <p class="text-xs font-bold uppercase tracking-wider text-slate-300">Events</p>
+      <h1 class="text-xl font-bold">{{ isEdit ? 'Edit event' : 'New event' }}</h1>
+      <p class="text-slate-300 text-sm mt-1">Create or update event details — saved via the events API.</p>
+    </div>
+    <div [ngClass]="isAdminRoute() ? 'p-6' : ''">
+      <h2 *ngIf="!isAdminRoute()" class="text-2xl font-bold text-gray-900 mb-6">{{ isEdit ? 'Edit event' : 'Create New Event' }}</h2>
+
+      <div *ngIf="isLoading" class="py-12 text-center text-slate-500">Loading…</div>
+      <div *ngIf="errorMessage" class="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{{ errorMessage }}</div>
+
+      <form *ngIf="!isLoading || !isEdit" [formGroup]="eventForm" (ngSubmit)="onSubmit()" class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-slate-700">Title *</label>
+          <input type="text" formControlName="title"
+                 class="mt-1 block w-full rounded-lg border border-slate-200 px-3 py-2 text-sm shadow-sm focus:border-slate-400 focus:ring-slate-400" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-slate-700">Description</label>
+          <textarea formControlName="description" rows="3"
+                    class="mt-1 block w-full rounded-lg border border-slate-200 px-3 py-2 text-sm shadow-sm focus:border-slate-400 focus:ring-slate-400"></textarea>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-slate-700">Date *</label>
+            <input type="datetime-local" formControlName="date"
+                   class="mt-1 block w-full rounded-lg border border-slate-200 px-3 py-2 text-sm shadow-sm focus:border-slate-400 focus:ring-slate-400" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-slate-700">Location</label>
+            <input type="text" formControlName="location"
+                   class="mt-1 block w-full rounded-lg border border-slate-200 px-3 py-2 text-sm shadow-sm focus:border-slate-400 focus:ring-slate-400" />
+          </div>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-slate-700">Type *</label>
+            <select formControlName="type"
+                    class="mt-1 block w-full rounded-lg border border-slate-200 px-3 py-2 text-sm bg-white focus:border-slate-400 focus:ring-slate-400">
+              <option *ngFor="let t of eventTypes" [value]="t">{{ t }}</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-slate-700">Max capacity *</label>
+            <input type="number" formControlName="maxCapacity"
+                   class="mt-1 block w-full rounded-lg border border-slate-200 px-3 py-2 text-sm shadow-sm focus:border-slate-400 focus:ring-slate-400" />
+          </div>
+        </div>
+        <div class="flex flex-wrap justify-end gap-3 pt-4">
+          <button type="button" (click)="cancel()"
+                  class="px-5 py-2.5 rounded-xl text-sm font-semibold border border-slate-200 text-slate-700 hover:bg-slate-50">
+            Cancel
+          </button>
+          <button type="submit" [disabled]="eventForm.invalid || submitLoading"
+                  class="px-6 py-2.5 rounded-xl text-sm font-bold text-white bg-slate-800 hover:bg-slate-900 disabled:opacity-50">
+            {{ submitLoading ? 'Saving…' : (isEdit ? 'Save changes' : 'Create event') }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

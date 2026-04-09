@@ -5,6 +5,7 @@ import com.civicplatform.dto.response.PostResponse;
 import com.civicplatform.entity.User;
 import com.civicplatform.enums.PostStatus;
 import com.civicplatform.repository.UserRepository;
+import com.civicplatform.security.RegularAccountPolicy;
 import com.civicplatform.service.PostService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -30,8 +31,9 @@ public class PostController {
     @Operation(summary = "Create a new post")
     @PostMapping
     public ResponseEntity<PostResponse> createPost(@Valid @RequestBody PostRequest postRequest, Authentication authentication) {
-        // Get user ID from authentication (you'll need to implement this logic)
-        Long userId = getUserIdFromAuthentication(authentication);
+        User user = getUserFromAuthentication(authentication);
+        RegularAccountPolicy.requireRegularUser(user);
+        Long userId = user.getId();
         PostResponse response = postService.createPost(postRequest, userId);
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
@@ -47,6 +49,7 @@ public class PostController {
     @GetMapping("/my")
     public ResponseEntity<List<PostResponse>> getMyPosts(Authentication authentication) {
         User user = getUserFromAuthentication(authentication);
+        RegularAccountPolicy.requireRegularUser(user);
         List<PostResponse> response = postService.getPostsByCreator(user.getUserName());
         return ResponseEntity.ok(response);
     }
@@ -107,18 +110,11 @@ public class PostController {
     private void checkPostOwnership(Long postId, Authentication authentication) {
         User user = userRepository.findByEmail(authentication.getName())
                 .orElseThrow(() -> new RuntimeException("Authenticated user not found"));
-        boolean isAdmin = user.getAuthorities().stream()
-                .anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority()));
-        if (!isAdmin) {
-            PostResponse post = postService.getPostById(postId);
-            if (!user.getUserName().equals(post.getCreator())) {
-                throw new org.springframework.security.access.AccessDeniedException("You are not the owner of this post");
-            }
+        RegularAccountPolicy.requireRegularUser(user);
+        PostResponse post = postService.getPostById(postId);
+        if (!user.getUserName().equals(post.getCreator())) {
+            throw new org.springframework.security.access.AccessDeniedException("You are not the owner of this post");
         }
-    }
-
-    private Long getUserIdFromAuthentication(Authentication authentication) {
-        return getUserFromAuthentication(authentication).getId();
     }
 
     private User getUserFromAuthentication(Authentication authentication) {

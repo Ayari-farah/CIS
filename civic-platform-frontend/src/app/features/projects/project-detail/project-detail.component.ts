@@ -5,7 +5,7 @@ import {
   OnInit
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ActivatedRoute, RouterModule } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { EMPTY, Subscription } from 'rxjs';
 import { catchError, map, switchMap } from 'rxjs/operators';
@@ -37,6 +37,7 @@ export class ProjectDetailComponent implements OnInit, OnDestroy {
 
   constructor(
     private route: ActivatedRoute,
+    private router: Router,
     private projectsService: ProjectsService,
     public readonly voteState: ProjectVoteStateService,
     private authService: AuthService,
@@ -96,6 +97,14 @@ export class ProjectDetailComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.voteSyncSub?.unsubscribe();
     this.routeSub?.unsubscribe();
+  }
+
+  isAdminRoute(): boolean {
+    return this.router.url.split('?')[0].startsWith('/admin');
+  }
+
+  projectsListPath(): string {
+    return this.isAdminRoute() ? '/admin/projects' : '/projects';
   }
 
   /**

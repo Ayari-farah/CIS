@@ -5,9 +5,10 @@ export enum UserType {
   PARTICIPANT = 'PARTICIPANT'
 }
 
-export enum Role {
-  USER = 'USER',
-  ADMIN = 'ADMIN'
+/** Platform account kind — separate from user_type (regular users only). */
+export enum AccountType {
+  ADMIN = 'ADMIN',
+  USER = 'USER'
 }
 
 export enum Badge {
@@ -30,22 +31,23 @@ export interface User {
   id: number;
   userName: string;
   email: string;
-  userType: UserType;
-  role: Role;
-  badge: Badge;
-  points: number;
+  accountType: AccountType;
+  /** True for seeded platform admins only. */
+  isAdmin: boolean;
+  /** Set for regular accounts only (CITIZEN | PARTICIPANT | AMBASSADOR | DONOR). */
+  userType?: UserType;
+  badge?: Badge;
+  points?: number;
   awardedDate?: string;
   createdAt: string;
   badgeProgress?: BadgeProgressInfo;
-  
-  // Profile fields
+
   firstName?: string;
   lastName?: string;
   phone?: string;
   address?: string;
   birthDate?: string;
-  
-  // DONOR fields
+
   companyName?: string;
   associationName?: string;
   contactName?: string;
@@ -62,20 +64,17 @@ export interface RegisterRequest {
   email: string;
   password: string;
   userType: UserType.CITIZEN | UserType.DONOR;
-  
-  // Common fields
+
   firstName: string;
   lastName: string;
   phone: string;
   address: string;
-  
-  // DONOR-specific fields
+
   companyName?: string;
   associationName?: string;
   contactName?: string;
   contactEmail?: string;
-  
-  // CITIZEN-specific fields
+
   birthDate?: string;
 }
 
@@ -89,14 +88,14 @@ export interface AuthResponse {
   userId: number;
   userName: string;
   email: string;
-  userType: UserType;
-  role: Role;
-  badge: Badge;
-  points: number;
+  accountType: AccountType;
+
+  userType?: UserType;
+  badge?: Badge;
+  points?: number;
   awardedDate?: string;
   createdAt: string;
-  
-  // Additional user fields
+
   firstName?: string;
   lastName?: string;
   phone?: string;

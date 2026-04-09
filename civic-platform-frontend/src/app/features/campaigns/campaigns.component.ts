@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { forkJoin, of } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
@@ -39,11 +39,28 @@ export class CampaignsComponent implements OnInit {
 
   constructor(
     private campaignsService: CampaignsService,
-    private authService: AuthService
+    private authService: AuthService,
+    private router: Router
   ) {}
 
   canCreateCampaign(): boolean {
-    return this.authService.isDonor() || this.authService.isAmbassador();
+    return this.authService.canCreateContent();
+  }
+
+  showNewCampaignButton(): boolean {
+    return this.canCreateCampaign() || (this.isAdminRoute() && this.authService.isAdmin());
+  }
+
+  isAdminRoute(): boolean {
+    return this.router.url.split('?')[0].startsWith('/admin');
+  }
+
+  campaignDetailLink(id: number): (string | number)[] {
+    return this.isAdminRoute() ? ['/admin/campaigns', id] : ['/campaigns', id];
+  }
+
+  isPlatformAdmin(): boolean {
+    return this.authService.isAdmin();
   }
 
   ngOnInit(): void {
@@ -86,7 +103,7 @@ export class CampaignsComponent implements OnInit {
   }
 
   private loadVoteFlags(): void {
-    if (!this.authService.isLoggedIn()) {
+    if (!this.authService.isLoggedIn() || this.authService.isAdmin()) {
       return;
     }
     const ids = this.allCampaigns.map((c) => c.id);

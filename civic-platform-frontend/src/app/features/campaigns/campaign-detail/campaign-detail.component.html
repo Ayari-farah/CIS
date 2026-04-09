@@ -1,15 +1,15 @@
-<div class="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-emerald-50 py-8 px-4 sm:px-6 lg:px-8">
+<div [ngClass]="isAdminRoute() ? 'min-h-screen bg-slate-100 py-8 px-4 sm:px-6 lg:px-8' : 'min-h-screen bg-gradient-to-br from-emerald-50 via-white to-emerald-50 py-8 px-4 sm:px-6 lg:px-8'">
   <div class="max-w-6xl mx-auto">
-    <nav class="flex items-center space-x-2 text-sm text-gray-500 mb-6">
-      <a routerLink="/dashboard" class="hover:text-emerald-600 transition-colors">Dashboard</a>
+    <nav class="flex items-center space-x-2 text-sm mb-6" [ngClass]="isAdminRoute() ? 'text-slate-500' : 'text-gray-500'">
+      <a [routerLink]="isAdminRoute() ? '/admin/dashboard' : '/dashboard'" [ngClass]="isAdminRoute() ? 'hover:text-slate-800' : 'hover:text-emerald-600'" class="transition-colors">Dashboard</a>
       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
       </svg>
-      <a routerLink="/campaigns" class="hover:text-emerald-600 transition-colors">Campagnes</a>
+      <a [routerLink]="campaignsListPath()" [ngClass]="isAdminRoute() ? 'hover:text-slate-800' : 'hover:text-emerald-600'" class="transition-colors">Campagnes</a>
       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
       </svg>
-      <span class="text-gray-800 font-medium truncate">{{ campaign?.name || '…' }}</span>
+      <span [ngClass]="isAdminRoute() ? 'text-slate-800' : 'text-gray-800'" class="font-medium truncate">{{ campaign?.name || '…' }}</span>
     </nav>
 
     <div *ngIf="successMessage" class="fixed top-20 right-4 z-50 bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg shadow-lg text-sm">
@@ -17,18 +17,32 @@
     </div>
 
     <div *ngIf="isLoading" class="flex justify-center items-center py-20">
-      <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600"></div>
+      <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2" [ngClass]="isAdminRoute() ? 'border-slate-600' : 'border-emerald-600'"></div>
     </div>
 
-    <div *ngIf="errorMessage && !isLoading" class="bg-red-50 border-l-4 border-red-400 p-4 rounded-lg text-red-700 mb-6">
+    <div *ngIf="errorMessage && !isLoading" class="bg-red-50 border border-red-200 rounded-xl p-4 text-red-700 mb-6">
       {{ errorMessage }}
     </div>
 
     <div *ngIf="campaign && !isLoading" class="grid grid-cols-1 lg:grid-cols-3 gap-8">
       <!-- Main -->
       <div class="lg:col-span-2 space-y-6">
-        <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
-          <div class="p-8 space-y-6">
+        <div [ngClass]="isAdminRoute() ? 'rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden' : 'bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden'">
+          <div *ngIf="isAdminRoute()" class="bg-slate-800 px-6 py-5 text-white">
+            <div class="flex flex-wrap items-center gap-2 mb-2">
+              <span class="text-xs font-bold px-3 py-1 rounded-full bg-white/15 text-white border border-white/25">{{ campaign.status }}</span>
+              <span class="text-xs font-bold px-3 py-1 rounded-full bg-white/10 text-slate-100 border border-white/20">{{ campaign.type }}</span>
+            </div>
+            <h1 class="text-2xl font-bold">{{ campaign.name }}</h1>
+            <p *ngIf="campaign.hashtag" class="text-slate-300 text-sm mt-2">{{ formatHashtag(campaign.hashtag) }}</p>
+            <p class="text-slate-300 text-sm mt-3 flex flex-wrap gap-2 items-center">
+              <span *ngIf="campaign.startDate">🗓 {{ campaign.startDate | date:'mediumDate' }}</span>
+              <span *ngIf="campaign.startDate && campaign.endDate">→</span>
+              <span *ngIf="campaign.endDate">{{ campaign.endDate | date:'mediumDate' }}</span>
+            </p>
+          </div>
+
+          <div *ngIf="!isAdminRoute()" class="p-8 space-y-6">
             <div class="flex flex-wrap items-center gap-2">
               <span [ngClass]="getStatusPillClass(campaign.status)" class="text-xs font-medium px-3 py-1 rounded-full">{{ campaign.status }}</span>
               <span [ngClass]="getTypePillClass(campaign.type)" class="text-xs font-medium px-3 py-1 rounded-full">{{ campaign.type }}</span>
@@ -36,14 +50,19 @@
             <h1 class="text-3xl font-bold text-gray-900">{{ campaign.name }}</h1>
             <p *ngIf="campaign.hashtag" class="text-emerald-600 font-medium">{{ formatHashtag(campaign.hashtag) }}</p>
             <p class="text-gray-600 leading-relaxed whitespace-pre-line">{{ campaign.description || '—' }}</p>
-
             <div class="text-sm text-gray-600 flex flex-wrap gap-4">
               <span *ngIf="campaign.startDate">🗓 {{ campaign.startDate | date:'mediumDate' }}</span>
               <span *ngIf="campaign.startDate && campaign.endDate">→</span>
               <span *ngIf="campaign.endDate">{{ campaign.endDate | date:'mediumDate' }}</span>
             </div>
+          </div>
 
-            <div class="bg-gray-50 rounded-xl p-6 space-y-2 text-sm text-gray-800">
+          <div [ngClass]="isAdminRoute() ? 'p-6 space-y-6 border-t border-slate-100' : 'hidden'">
+            <p *ngIf="isAdminRoute()" class="text-slate-600 leading-relaxed whitespace-pre-line">{{ campaign.description || '—' }}</p>
+          </div>
+
+          <div [ngClass]="isAdminRoute() ? 'px-6 pb-6 space-y-6' : 'px-8 pb-8 space-y-6'" class="space-y-6">
+            <div *ngIf="!isAdminRoute()" class="bg-gray-50 rounded-xl p-6 space-y-2 text-sm text-gray-800">
               <p *ngIf="campaign.neededAmount != null">💰 Montant cible : <strong>{{ campaign.neededAmount | number:'1.0-2' }}</strong> TND</p>
               <p *ngIf="campaign.goalAmount != null">⚖️ Actuel : <strong>{{ campaign.goalAmount | number:'1.0-2' }}</strong> TND</p>
               <p *ngIf="campaign.goalKg != null">🌾 Objectif kg : <strong>{{ campaign.goalKg }}</strong> kg</p>
@@ -52,29 +71,38 @@
               <p>📊 Actuel repas : <strong>{{ campaign.currentMeals ?? 0 }}</strong> repas</p>
             </div>
 
-            <div class="bg-gray-50 rounded-xl p-6">
+            <div *ngIf="isAdminRoute()" class="rounded-xl border border-slate-200 bg-slate-50 p-5 space-y-2 text-sm text-slate-800">
+              <p *ngIf="campaign.neededAmount != null">💰 Montant cible : <strong>{{ campaign.neededAmount | number:'1.0-2' }}</strong> TND</p>
+              <p *ngIf="campaign.goalAmount != null">⚖️ Actuel : <strong>{{ campaign.goalAmount | number:'1.0-2' }}</strong> TND</p>
+              <p *ngIf="campaign.goalKg != null">🌾 Objectif kg : <strong>{{ campaign.goalKg }}</strong> kg</p>
+              <p *ngIf="campaign.goalMeals != null">🍽️ Objectif repas : <strong>{{ campaign.goalMeals }}</strong> repas</p>
+              <p>📊 Actuel kg : <strong>{{ campaign.currentKg ?? 0 }}</strong> kg</p>
+              <p>📊 Actuel repas : <strong>{{ campaign.currentMeals ?? 0 }}</strong> repas</p>
+            </div>
+
+            <div [ngClass]="isAdminRoute() ? 'rounded-xl border border-slate-200 bg-white p-5' : 'bg-gray-50 rounded-xl p-6'">
               <div class="flex justify-between items-end mb-3">
-                <span class="text-2xl font-bold text-gray-900">{{ getMoneyProgressPct(campaign) }}%</span>
-                <span class="text-sm text-gray-500" *ngIf="campaign.neededAmount != null">
+                <span class="text-2xl font-bold text-slate-900">{{ getMoneyProgressPct(campaign) }}%</span>
+                <span class="text-sm text-slate-500" *ngIf="campaign.neededAmount != null">
                   {{ campaign.goalAmount ?? 0 | number:'1.0-0' }} / {{ campaign.neededAmount | number:'1.0-0' }} TND
                 </span>
               </div>
-              <div class="w-full bg-gray-200 rounded-full h-4 overflow-hidden">
+              <div class="w-full bg-slate-200 rounded-full h-4 overflow-hidden">
                 <div
-                  class="h-full rounded-full bg-gradient-to-r from-green-400 to-emerald-500 transition-all duration-500"
+                  [ngClass]="isAdminRoute() ? 'h-full rounded-full bg-slate-700 transition-all duration-500' : 'h-full rounded-full bg-gradient-to-r from-green-400 to-emerald-500 transition-all duration-500'"
                   [style.width.%]="getMoneyProgressPct(campaign)"></div>
               </div>
             </div>
 
-            <div class="border-t border-gray-100 pt-6">
-              <h2 class="text-lg font-semibold text-gray-900 mb-3">Vote</h2>
-              <p class="text-gray-600 mb-2">Total des votes : <strong>{{ campaign.voteCount ?? 0 }}</strong></p>
+            <div *ngIf="showVoteSection()" [ngClass]="isAdminRoute() ? 'border-t border-slate-100 pt-6' : 'border-t border-gray-100 pt-6'">
+              <h2 class="text-lg font-semibold text-slate-900 mb-3">Vote</h2>
+              <p class="text-slate-600 mb-2">Total des votes : <strong>{{ campaign.voteCount ?? 0 }}</strong></p>
               <div class="mb-4">
-                <div class="flex justify-between text-xs text-gray-500 mb-1">
+                <div class="flex justify-between text-xs text-slate-500 mb-1">
                   <span>Progression vers 100 votes</span>
                   <span>{{ voteProgressPct(campaign) }}%</span>
                 </div>
-                <div class="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                <div class="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
                   <div
                     class="h-full rounded-full bg-emerald-500 transition-all"
                     [style.width.%]="voteProgressPct(campaign)"></div>
@@ -89,8 +117,8 @@
                 {{ voting ? '…' : 'Voter pour cette campagne' }}
               </button>
               <p *ngIf="hasVoted" class="text-sm text-green-700 font-medium">✓ Vous avez voté pour cette campagne.</p>
-              <p *ngIf="canVote()" class="text-xs text-gray-500 mt-1">Un seul vote par utilisateur est autorisé.</p>
-              <p *ngIf="campaign.status !== 'DRAFT'" class="text-sm text-gray-500">Les votes de lancement ne sont possibles qu’en brouillon.</p>
+              <p *ngIf="canVote()" class="text-xs text-slate-500 mt-1">Un seul vote par utilisateur est autorisé.</p>
+              <p *ngIf="campaign.status !== 'DRAFT'" class="text-sm text-slate-500">Les votes de lancement ne sont possibles qu’en brouillon.</p>
             </div>
           </div>
         </div>
@@ -98,26 +126,29 @@
 
       <!-- Sidebar -->
       <div class="space-y-6">
-        <div class="bg-white rounded-2xl shadow-md border border-gray-100 p-6">
-          <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">Créateur</h3>
+        <div [ngClass]="isAdminRoute() ? 'rounded-2xl border border-slate-200 bg-white shadow-sm p-6' : 'bg-white rounded-2xl shadow-md border border-gray-100 p-6'">
+          <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4">Créateur</h3>
           <div class="flex items-center gap-3">
-            <div class="h-12 w-12 rounded-full bg-emerald-600 flex items-center justify-center text-white font-bold">
+            <div [ngClass]="isAdminRoute() ? 'h-12 w-12 rounded-full bg-slate-800 flex items-center justify-center text-white font-bold' : 'h-12 w-12 rounded-full bg-emerald-600 flex items-center justify-center text-white font-bold'">
               {{ creatorInitials() }}
             </div>
             <div>
-              <p class="font-semibold text-gray-900">{{ campaign.createdByName || '—' }}</p>
+              <p class="font-semibold text-slate-900">{{ campaign.createdByName || '—' }}</p>
             </div>
           </div>
         </div>
 
-        <div *ngIf="canManage()" class="bg-white rounded-2xl shadow-md border border-gray-100 p-6 space-y-3">
-          <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-2">Actions</h3>
+        <div *ngIf="canManageCampaign()" [ngClass]="isAdminRoute() ? 'rounded-2xl border border-slate-200 bg-slate-50 p-6 space-y-3' : 'bg-white rounded-2xl shadow-md border border-gray-100 p-6 space-y-3'">
+          <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Gestion</h3>
+          <p *ngIf="isAdminRoute()" class="text-sm text-slate-600 mb-2">Modifier, lancer, clôturer ou supprimer cette campagne.</p>
           <button
             *ngIf="campaign.status === 'DRAFT'"
             type="button"
             (click)="launch()"
             [disabled]="actionLoading"
-            class="w-full py-2 px-4 rounded-lg text-sm font-medium text-white bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 disabled:opacity-50">
+            [ngClass]="isAdminRoute()
+              ? 'w-full py-2.5 px-4 rounded-xl text-sm font-bold text-white bg-slate-800 hover:bg-slate-900 disabled:opacity-50'
+              : 'w-full py-2 px-4 rounded-lg text-sm font-medium text-white bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 disabled:opacity-50'">
             Lancer la campagne
           </button>
           <button
@@ -125,18 +156,20 @@
             type="button"
             (click)="closeCampaign()"
             [disabled]="actionLoading"
-            class="w-full py-2 px-4 rounded-lg text-sm font-medium text-white bg-gradient-to-r from-blue-500 to-emerald-600 disabled:opacity-50">
+            [ngClass]="isAdminRoute()
+              ? 'w-full py-2.5 px-4 rounded-xl text-sm font-bold text-white bg-slate-800 hover:bg-slate-900 disabled:opacity-50'
+              : 'w-full py-2 px-4 rounded-lg text-sm font-medium text-white bg-gradient-to-r from-blue-500 to-emerald-600 disabled:opacity-50'">
             Clôturer la campagne
           </button>
           <a
-            [routerLink]="['/campaigns', campaign.id, 'edit']"
-            class="block w-full text-center py-2 px-4 rounded-lg text-sm font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100">
+            [routerLink]="campaignEditLink()"
+            class="block w-full text-center py-2.5 px-4 rounded-xl text-sm font-bold border border-slate-300 text-slate-900 bg-white hover:bg-slate-50">
             Modifier
           </a>
           <button
             type="button"
             (click)="openDeleteModal()"
-            class="w-full py-2 px-4 rounded-lg text-sm font-medium text-red-700 bg-red-50 border border-red-200 hover:bg-red-100">
+            class="w-full py-2.5 px-4 rounded-xl text-sm font-bold text-white bg-red-600 hover:bg-red-700">
             Supprimer
           </button>
         </div>
@@ -150,18 +183,18 @@
   *ngIf="showDeleteModal && campaign"
   class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40"
   (click)="cancelDelete()">
-  <div class="bg-white rounded-2xl shadow-xl max-w-md w-full p-6" (click)="$event.stopPropagation()">
-    <h3 class="text-lg font-bold text-gray-900 mb-2">Supprimer la campagne ?</h3>
-    <p class="text-gray-600 text-sm mb-6">Cette action est irréversible.</p>
+  <div class="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 border border-slate-200" (click)="$event.stopPropagation()">
+    <h3 class="text-lg font-bold text-slate-900 mb-2">Supprimer la campagne ?</h3>
+    <p class="text-slate-600 text-sm mb-6">Cette action est irréversible.</p>
     <div class="flex justify-end gap-3">
-      <button type="button" (click)="cancelDelete()" class="px-4 py-2 rounded-lg text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200">
+      <button type="button" (click)="cancelDelete()" class="px-4 py-2 rounded-xl text-sm font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200">
         Annuler
       </button>
       <button
         type="button"
         (click)="confirmDelete()"
         [disabled]="deleteLoading"
-        class="px-4 py-2 rounded-lg text-sm font-medium text-white bg-red-600 hover:bg-red-700 disabled:opacity-50">
+        class="px-4 py-2 rounded-xl text-sm font-bold text-white bg-red-600 hover:bg-red-700 disabled:opacity-50">
         {{ deleteLoading ? '…' : 'Supprimer' }}
       </button>
     </div>

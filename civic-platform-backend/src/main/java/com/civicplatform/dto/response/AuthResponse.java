@@ -1,7 +1,6 @@
 package com.civicplatform.dto.response;
 
 import com.civicplatform.enums.Badge;
-import com.civicplatform.enums.Role;
 import com.civicplatform.enums.UserType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -22,8 +21,11 @@ public class AuthResponse {
     private Long userId;
     private String userName;
     private String email;
+
+    /** "ADMIN" or "USER" (regular platform account). */
+    private String accountType;
+
     private UserType userType;
-    private Role role;
     private Badge badge;
     private Integer points;
     private LocalDate awardedDate;

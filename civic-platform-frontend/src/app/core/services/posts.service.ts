@@ -59,6 +59,18 @@ export class PostsService {
     return this.http.get<Post[]>(this.API_URL);
   }
 
+  getPostsByStatus(status: PostStatus): Observable<Post[]> {
+    return this.http.get<Post[]>(`${this.API_URL}/status/${status}`);
+  }
+
+  approvePost(id: number): Observable<Post> {
+    return this.http.post<Post>(`${this.API_URL}/${id}/approve`, {});
+  }
+
+  rejectPost(id: number): Observable<Post> {
+    return this.http.post<Post>(`${this.API_URL}/${id}/reject`, {});
+  }
+
   getMyPosts(): Observable<Post[]> {
     return this.http.get<Post[]>(`${this.API_URL}/my`);
   }

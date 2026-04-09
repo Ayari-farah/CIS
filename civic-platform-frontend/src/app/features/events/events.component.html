@@ -1,13 +1,41 @@
-<div class="container mx-auto px-4 py-8">
-  <h1 class="text-3xl font-bold mb-6">Events</h1>
-  <div *ngIf="isLoading" class="text-center">Loading...</div>
-  <div *ngIf="errorMessage" class="text-red-600">{{ errorMessage }}</div>
-  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-    <div *ngFor="let event of events" class="bg-white shadow rounded-lg p-4">
-      <h3 class="font-bold">{{ event.title }}</h3>
-      <p class="text-sm text-gray-600">{{ event.date | date }}</p>
-      <span class="px-2 py-1 rounded text-xs" [ngClass]="getStatusColor(event.status)">{{ event.status }}</span>
-      <a [routerLink]="['/events', event.id]" class="block mt-2 text-emerald-600">View Details →</a>
+<div [ngClass]="isAdminRoute() ? 'min-h-screen bg-slate-100 px-4 py-8' : 'container mx-auto px-4 py-8'">
+  <div [ngClass]="isAdminRoute() ? 'max-w-7xl mx-auto rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden' : ''">
+    <div *ngIf="isAdminRoute()" class="bg-slate-800 px-6 py-4 text-white">
+      <p class="text-xs font-bold uppercase tracking-wider text-slate-300">Events</p>
+      <h1 class="text-xl font-bold">Platform events</h1>
+      <p class="text-slate-300 text-sm mt-1">Browse upcoming and past events — open a card for details.</p>
+    </div>
+    <div [ngClass]="isAdminRoute() ? 'p-6' : ''">
+      <div *ngIf="!isAdminRoute()" class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+        <h1 class="text-3xl font-bold text-gray-900">Events</h1>
+        <a
+          *ngIf="showNewEventButton()"
+          [routerLink]="newEventPath()"
+          class="inline-flex items-center px-4 py-2 rounded-lg text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700">
+          + New Event
+        </a>
+      </div>
+      <div *ngIf="isAdminRoute()" class="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-4 mb-6">
+        <a
+          *ngIf="showNewEventButton()"
+          [routerLink]="newEventPath()"
+          class="inline-flex items-center justify-center px-6 py-3 rounded-xl font-bold text-sm text-white bg-slate-800 hover:bg-slate-900">
+          + New Event
+        </a>
+      </div>
+      <div *ngIf="isLoading" class="text-center py-12 text-slate-500">
+        <div class="inline-block animate-spin rounded-full h-10 w-10 border-b-2" [ngClass]="isAdminRoute() ? 'border-slate-600' : 'border-emerald-600'"></div>
+        <p class="mt-2">Loading...</p>
+      </div>
+      <div *ngIf="errorMessage" class="text-red-600 text-sm mb-4">{{ errorMessage }}</div>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div *ngFor="let event of events" [ngClass]="isAdminRoute() ? 'rounded-xl border border-slate-200 bg-white shadow-sm p-5' : 'bg-white shadow rounded-lg p-4'">
+          <h3 class="font-bold text-slate-900">{{ event.title }}</h3>
+          <p class="text-sm text-slate-600 mt-1">{{ event.date | date }}</p>
+          <span class="inline-block mt-2 px-2 py-1 rounded text-xs" [ngClass]="getStatusColor(event.status)">{{ event.status }}</span>
+          <a [routerLink]="eventDetailLink(event.id)" [ngClass]="isAdminRoute() ? 'block mt-3 text-sm font-semibold text-slate-800 hover:text-slate-950' : 'block mt-2 text-emerald-600'">View Details →</a>
+        </div>
+      </div>
     </div>
   </div>
 </div>

@@ -139,7 +139,7 @@ export class CampaignFormComponent implements OnInit {
     if (this.isEdit && this.campaignId != null) {
       this.campaignsService.updateCampaign(this.campaignId, campaignRequest).subscribe({
         next: (c) => {
-          this.router.navigate(['/campaigns', c.id], { queryParams: { success: '1' } });
+          this.navigateAfterSave(c.id);
         },
         error: (error) => {
           this.errorMessage = error.error?.message || 'Échec de la mise à jour';
@@ -149,7 +149,7 @@ export class CampaignFormComponent implements OnInit {
     } else {
       this.campaignsService.createCampaign(campaignRequest).subscribe({
         next: (c) => {
-          this.router.navigate(['/campaigns', c.id], { queryParams: { success: '1' } });
+          this.navigateAfterSave(c.id);
         },
         error: (error) => {
           this.errorMessage = error.error?.message || 'Échec de la création';
@@ -159,7 +159,20 @@ export class CampaignFormComponent implements OnInit {
     }
   }
 
+  isAdminRoute(): boolean {
+    return this.router.url.split('?')[0].startsWith('/admin');
+  }
+
+  campaignsListPath(): string {
+    return this.isAdminRoute() ? '/admin/campaigns' : '/campaigns';
+  }
+
+  private navigateAfterSave(id: number): void {
+    const base = this.isAdminRoute() ? '/admin/campaigns' : '/campaigns';
+    this.router.navigate([base, id], { queryParams: { success: '1' } });
+  }
+
   cancel(): void {
-    this.router.navigate(['/campaigns']);
+    this.router.navigateByUrl(this.campaignsListPath());
   }
 }

@@ -15,22 +15,29 @@ export class UserTypeGuard implements CanActivate {
     route: ActivatedRouteSnapshot,
     state: RouterStateSnapshot
   ): Observable<boolean> | Promise<boolean> | boolean {
-    
-    // Check if user is logged in
+
     if (!this.authService.isLoggedIn()) {
-      this.router.navigate(['/login'], { 
-        queryParams: { returnUrl: state.url } 
+      this.router.navigate(['/login'], {
+        queryParams: { returnUrl: state.url }
       });
       return false;
     }
 
-    // Get allowed user types from route data
+    if (this.authService.isAdmin()) {
+      this.router.navigate(['/admin/dashboard']);
+      return false;
+    }
+
     const allowedUserTypes = route.data['userTypes'] as UserType[];
-    
+
     if (allowedUserTypes && allowedUserTypes.length > 0) {
       const currentUser = this.authService.getCurrentUser();
-      
-      if (!currentUser || !allowedUserTypes.includes(currentUser.userType)) {
+      const allowed =
+        currentUser != null &&
+        !!currentUser.userType &&
+        allowedUserTypes.includes(currentUser.userType);
+
+      if (!allowed) {
         this.router.navigate(['/dashboard'], { queryParams: { unauthorized: 'user-type' } });
         return false;
       }

@@ -1,6 +1,7 @@
 package com.civicplatform.entity;
 
-import com.civicplatform.enums.*;
+import com.civicplatform.enums.Badge;
+import com.civicplatform.enums.UserType;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -31,114 +32,114 @@ import java.util.List;
 @AllArgsConstructor
 @EntityListeners(AuditingEntityListener.class)
 public class User implements UserDetails {
-    
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    
+
     @NotBlank(message = "Username is required")
     @Size(min = 3, max = 50, message = "Username must be between 3 and 50 characters")
     @Column(name = "user_name", nullable = false, unique = true)
     private String userName;
-    
+
     @NotBlank(message = "Email is required")
     @Email(message = "Email should be valid")
     @Column(nullable = false, unique = true)
     private String email;
-    
+
     @NotBlank(message = "Password is required")
     @Size(min = 6, message = "Password must be at least 6 characters")
     @Column(nullable = false)
     private String password;
-    
+
+    /** Null for platform admin accounts (seed only). */
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = true)
     private UserType userType;
-    
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+
+    @Column(name = "is_admin", nullable = false)
     @Builder.Default
-    private Role role = Role.USER;
-    
+    private boolean admin = false;
+
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
-    
-    // AMBASSADOR fields
+
     @Enumerated(EnumType.STRING)
+    @Column(nullable = true)
     private Badge badge;
-    
+
     private LocalDate awardedDate;
-    
-    // DONOR fields
+
     private String companyName;
     private String associationName;
     private String contactName;
     private String contactEmail;
     private String address;
-    
-    // CITIZEN fields
+
     private String firstName;
     private String lastName;
     private String phone;
     private LocalDate birthDate;
-    
-    @Builder.Default
-    private Integer points = 0;
-    
-    // Relationships
+
+    @Column(nullable = true)
+    private Integer points;
+
     @OneToMany(mappedBy = "author", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Comment> comments;
-    
+
     @OneToMany(mappedBy = "owner", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Like> likes;
-    
+
     @OneToMany(mappedBy = "createdBy", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Campaign> campaigns;
-    
+
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<EventParticipant> eventParticipations;
-    
+
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<ProjectFunding> projectFundings;
-    
+
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<CampaignVote> campaignVotes;
-    
+
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<RefreshToken> refreshTokens;
-    
-    // Explicit getter for userName to ensure Lombok generates it correctly
+
     public String getUserName() {
         return userName;
     }
-    
-    // UserDetails implementation
+
+    public boolean isRegularUser() {
+        return !admin;
+    }
+
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of(new SimpleGrantedAuthority("ROLE_" + role.name()));
+        String r = admin ? "ROLE_ADMIN" : "ROLE_USER";
+        return List.of(new SimpleGrantedAuthority(r));
     }
-    
+
     @Override
     public String getUsername() {
         return email;
     }
-    
+
     @Override
     public boolean isAccountNonExpired() {
         return true;
     }
-    
+
     @Override
     public boolean isAccountNonLocked() {
         return true;
     }
-    
+
     @Override
     public boolean isCredentialsNonExpired() {
         return true;
     }
-    
+
     @Override
     public boolean isEnabled() {
         return true;

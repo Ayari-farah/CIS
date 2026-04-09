@@ -1,5 +1,5 @@
 <div class="container mx-auto px-4 py-8">
-  <a routerLink="/users" class="text-emerald-600 hover:text-emerald-800 mb-4 inline-block">← Back to Users</a>
+  <a [routerLink]="backLink()" class="text-emerald-600 hover:text-emerald-800 mb-4 inline-block">← Back</a>
   
   <div *ngIf="isLoading" class="text-center py-8">
     <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600 mx-auto"></div>
@@ -22,7 +22,7 @@
     
     <div class="grid grid-cols-2 gap-4">
       <div><strong>Type:</strong> {{ user.userType }}</div>
-      <div><strong>Role:</strong> {{ user.role }}</div>
+      <div><strong>Platform admin:</strong> {{ user.isAdmin ? 'Yes' : 'No' }}</div>
       <div *ngIf="user.firstName"><strong>First Name:</strong> {{ user.firstName }}</div>
       <div *ngIf="user.lastName"><strong>Last Name:</strong> {{ user.lastName }}</div>
       <div *ngIf="user.phone"><strong>Phone:</strong> {{ user.phone }}</div>
