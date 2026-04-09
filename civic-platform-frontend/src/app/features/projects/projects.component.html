@@ -1,15 +1,15 @@
 <div [ngClass]="isAdminRoute() ? 'min-h-screen bg-slate-100 py-8 px-4 sm:px-6 lg:px-8' : 'min-h-screen bg-gradient-to-br from-emerald-50 via-white to-emerald-50 py-8 px-4 sm:px-6 lg:px-8'">
   <div [ngClass]="isAdminRoute() ? 'w-full max-w-7xl mx-auto rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden' : 'w-full max-w-7xl'">
     <div *ngIf="isAdminRoute()" class="bg-slate-800 px-6 py-4 text-white">
-      <p class="text-xs font-bold uppercase tracking-wider text-slate-300">Projets</p>
+      <p class="text-xs font-bold uppercase tracking-wider text-slate-300">Projects</p>
       <h1 class="text-xl font-bold">Community projects</h1>
       <p class="text-slate-300 text-sm mt-1">Review funding progress and votes — aligned with the admin Reports shell.</p>
     </div>
     <div [ngClass]="isAdminRoute() ? 'p-6' : ''">
     <div *ngIf="!isAdminRoute()" class="flex flex-col gap-1 mb-6">
-      <h1 class="text-3xl font-bold text-gray-900 tracking-tight">Projets</h1>
+      <h1 class="text-3xl font-bold text-gray-900 tracking-tight">Projects</h1>
       <p class="text-gray-500 text-sm">
-        Soutenez des initiatives locales — un vote par projet et par utilisateur.
+        Support local initiatives — one vote per project and per user.
       </p>
     </div>
 
@@ -27,7 +27,7 @@
         ></span>
         <div>
           <p class="text-xs font-medium text-gray-500 uppercase tracking-wide">
-            Projets affichés
+            Projects shown
           </p>
           <p class="text-2xl font-bold text-gray-900 tabular-nums">
             {{ filteredProjects.length }}
@@ -43,7 +43,7 @@
         ></span>
         <div>
           <p class="text-xs font-medium text-gray-500 uppercase tracking-wide">
-            Votes (liste)
+            Votes (list)
           </p>
           <p class="text-2xl font-bold text-gray-900 tabular-nums">
             {{ totalVotesInView }}
@@ -59,7 +59,7 @@
         ></span>
         <div>
           <p class="text-xs font-medium text-gray-500 uppercase tracking-wide">
-            Objectifs atteints
+            Goals reached
           </p>
           <p class="text-2xl font-bold text-gray-900 tabular-nums">
             {{ fundedCountInView }}
@@ -76,7 +76,7 @@
         <input
           type="search"
           [(ngModel)]="searchQuery"
-          placeholder="Rechercher un projet..."
+          placeholder="Search projects..."
           class="w-full max-w-md rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-emerald-500 focus:ring-emerald-500 bg-white"
         />
       </div>
@@ -85,16 +85,16 @@
           [(ngModel)]="statusFilter"
           class="rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-emerald-500 focus:ring-emerald-500 bg-white min-w-[10rem]"
         >
-          <option value="">Tous les statuts</option>
+          <option value="">All statuses</option>
           <option *ngFor="let s of statuses" [value]="s">{{ s }}</option>
         </select>
         <select
           [(ngModel)]="sortBy"
           class="rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-emerald-500 focus:ring-emerald-500 bg-white min-w-[10rem]"
         >
-          <option value="votes">Trier : votes</option>
-          <option value="progress">Trier : financement</option>
-          <option value="title">Trier : titre</option>
+          <option value="votes">Sort: votes</option>
+          <option value="progress">Sort: funding</option>
+          <option value="title">Sort: title</option>
         </select>
         <a
           *ngIf="canCreateProject()"
@@ -103,7 +103,7 @@
             ? 'inline-flex items-center px-6 py-3 rounded-xl font-bold text-sm text-white bg-slate-800 hover:bg-slate-900 transition-colors'
             : 'inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 transition-colors'"
         >
-          + Nouveau projet
+          + New project
         </a>
       </div>
     </div>
@@ -141,7 +141,7 @@
         >
           <span
             class="text-xs font-semibold uppercase tracking-wide bg-white/15 px-2 py-0.5 rounded-full"
-            >Projet</span
+            >Project</span
           >
           <span
             [ngClass]="getStatusPillClass(project.status)"
@@ -159,7 +159,7 @@
             </h3>
           </div>
           <p class="text-sm text-gray-600 line-clamp-2 mb-4 flex-1">
-            {{ project.description || 'Aucune description.' }}
+            {{ project.description || 'No description.' }}
           </p>
 
           <div class="mb-4">
@@ -204,7 +204,7 @@
             <span
               *ngIf="voteState.isVoted(project.id)"
               class="text-xs font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full"
-              >Vous avez voté</span
+              >You voted</span
             >
           </div>
 
@@ -237,10 +237,10 @@
               </svg>
               {{
                 voteState.isVoted(project.id)
-                  ? 'Déjà voté'
+                  ? 'Voted'
                   : votingId === project.id
-                    ? 'Envoi…'
-                    : 'Voter'
+                    ? 'Sending…'
+                    : 'Vote'
               }}
             </button>
             <a
@@ -249,7 +249,7 @@
                 ? 'text-center text-sm font-bold text-slate-800 hover:text-slate-950 py-1'
                 : 'text-center text-sm font-medium text-emerald-700 hover:text-emerald-800 py-1'"
             >
-              Voir le détail →
+              View details →
             </a>
           </div>
         </div>
@@ -260,7 +260,7 @@
       *ngIf="!isLoading && !filteredProjects.length && allProjects.length"
       class="text-center py-16 rounded-xl border border-dashed border-gray-200 bg-white/60"
     >
-      <p class="text-gray-600">Aucun projet ne correspond aux filtres.</p>
+      <p class="text-gray-600">No projects match the filters.</p>
     </div>
 
     <div
@@ -280,7 +280,7 @@
           d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
         />
       </svg>
-      <p class="text-gray-600 mb-4">Aucun projet pour le moment.</p>
+      <p class="text-gray-600 mb-4">No projects yet.</p>
       <a
         *ngIf="canCreateProject()"
         routerLink="/projects/new"
@@ -288,7 +288,7 @@
           ? 'inline-flex items-center px-6 py-3 rounded-xl font-bold text-sm text-white bg-slate-800 hover:bg-slate-900'
           : 'inline-flex items-center px-4 py-2 rounded-lg text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700'"
       >
-        Créer un projet
+        Create a project
       </a>
     </div>
     </div>

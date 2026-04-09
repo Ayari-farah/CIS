@@ -36,7 +36,7 @@ export class CampaignDetailComponent implements OnInit {
 
   ngOnInit(): void {
     if (this.route.snapshot.queryParamMap.get('success') === '1') {
-      this.successMessage = 'Campagne enregistrée.';
+      this.successMessage = 'Campaign saved.';
       this.router.navigate([], { relativeTo: this.route, queryParams: {}, replaceUrl: true });
       setTimeout(() => (this.successMessage = ''), 4000);
     }
@@ -61,7 +61,7 @@ export class CampaignDetailComponent implements OnInit {
         }
       },
       error: (error) => {
-        this.errorMessage = error.error?.message || 'Échec du chargement de la campagne';
+        this.errorMessage = error.error?.message || 'Failed to load campaign';
         this.isLoading = false;
       }
     });
@@ -164,9 +164,9 @@ export class CampaignDetailComponent implements OnInit {
         this.voting = false;
       },
       error: (error: { status?: number; error?: { message?: string } }) => {
-        const msg = error.error?.message || 'Vote impossible';
+        const msg = error.error?.message || 'Vote failed';
         this.errorMessage = msg;
-        if (error.status === 409 || error.status === 400 || /already voted|déjà voté/i.test(msg)) {
+        if (error.status === 409 || error.status === 400 || /already voted/i.test(msg)) {
           this.hasVoted = true;
         }
         this.voting = false;
@@ -182,12 +182,12 @@ export class CampaignDetailComponent implements OnInit {
     this.campaignsService.launchCampaign(this.campaign.id).subscribe({
       next: (c) => {
         this.campaign = c;
-        this.successMessage = 'Campagne lancée.';
+        this.successMessage = 'Campaign launched.';
         this.actionLoading = false;
         setTimeout(() => (this.successMessage = ''), 4000);
       },
       error: (e) => {
-        this.errorMessage = e.error?.message || 'Échec';
+        this.errorMessage = e.error?.message || 'Failed';
         this.actionLoading = false;
       }
     });
@@ -201,12 +201,12 @@ export class CampaignDetailComponent implements OnInit {
     this.campaignsService.closeCampaign(this.campaign.id).subscribe({
       next: (c) => {
         this.campaign = c;
-        this.successMessage = 'Campagne clôturée.';
+        this.successMessage = 'Campaign closed.';
         this.actionLoading = false;
         setTimeout(() => (this.successMessage = ''), 4000);
       },
       error: (e) => {
-        this.errorMessage = e.error?.message || 'Échec';
+        this.errorMessage = e.error?.message || 'Failed';
         this.actionLoading = false;
       }
     });
@@ -230,7 +230,7 @@ export class CampaignDetailComponent implements OnInit {
         this.router.navigateByUrl(this.campaignsListPath());
       },
       error: (e) => {
-        this.errorMessage = e.error?.message || 'Suppression impossible';
+        this.errorMessage = e.error?.message || 'Delete failed';
         this.deleteLoading = false;
         this.showDeleteModal = false;
       }

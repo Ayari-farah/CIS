@@ -109,7 +109,7 @@ export class CampaignFormComponent implements OnInit {
         this.isLoading = false;
       },
       error: (e) => {
-        this.errorMessage = e.error?.message || 'Chargement impossible';
+        this.errorMessage = e.error?.message || 'Failed to load';
         this.isLoading = false;
       }
     });
@@ -142,7 +142,7 @@ export class CampaignFormComponent implements OnInit {
           this.navigateAfterSave(c.id);
         },
         error: (error) => {
-          this.errorMessage = error.error?.message || 'Échec de la mise à jour';
+          this.errorMessage = error.error?.message || 'Update failed';
           this.isLoading = false;
         }
       });
@@ -152,7 +152,7 @@ export class CampaignFormComponent implements OnInit {
           this.navigateAfterSave(c.id);
         },
         error: (error) => {
-          this.errorMessage = error.error?.message || 'Échec de la création';
+          this.errorMessage = error.error?.message || 'Create failed';
           this.isLoading = false;
         }
       });

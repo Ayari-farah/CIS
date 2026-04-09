@@ -109,7 +109,7 @@ export class ProjectsComponent implements OnInit, OnDestroy {
       },
       error: (error) => {
         this.errorMessage =
-          error.error?.message || 'Impossible de charger les projets.';
+          error.error?.message || 'Failed to load projects.';
         this.isLoading = false;
         this.cd.markForCheck();
       }
@@ -207,12 +207,12 @@ export class ProjectsComponent implements OnInit, OnDestroy {
         this.cd.markForCheck();
       },
       error: (err: { status?: number; error?: { message?: string } }) => {
-        const msg = err.error?.message || 'Vote impossible.';
+        const msg = err.error?.message || 'Vote failed.';
         this.errorMessage = msg;
         if (
           err.status === 409 ||
           err.status === 400 ||
-          /already voted|déjà voté/i.test(msg)
+          /already voted/i.test(msg)
         ) {
           this.voteState.markVoted(p.id);
         }

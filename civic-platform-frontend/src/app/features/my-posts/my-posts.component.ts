@@ -91,7 +91,7 @@ export class MyPostsComponent implements OnInit {
         this.isLoading = false;
       },
       error: (e) => {
-        this.errorMessage = e.error?.message || 'Impossible de charger vos publications';
+        this.errorMessage = e.error?.message || 'Failed to load your posts';
         this.isLoading = false;
       }
     });
@@ -137,13 +137,13 @@ export class MyPostsComponent implements OnInit {
               this.posts[idx] = updated;
               this.posts = [...this.posts];
             }
-            this.successMessage = 'Publication mise à jour.';
+            this.successMessage = 'Post updated.';
             this.submitLoading = false;
             this.closeModal();
             setTimeout(() => (this.successMessage = ''), 4000);
           },
           error: (e) => {
-            this.errorMessage = e.error?.message || 'Échec de la mise à jour';
+            this.errorMessage = e.error?.message || 'Update failed';
             this.submitLoading = false;
           }
         });
@@ -151,13 +151,13 @@ export class MyPostsComponent implements OnInit {
       this.postsService.createPost({ type, content }).subscribe({
         next: (created) => {
           this.posts = [created, ...this.posts];
-          this.successMessage = 'Publication créée.';
+          this.successMessage = 'Post created.';
           this.submitLoading = false;
           this.closeModal();
           setTimeout(() => (this.successMessage = ''), 4000);
         },
         error: (e) => {
-          this.errorMessage = e.error?.message || 'Échec de la création';
+          this.errorMessage = e.error?.message || 'Create failed';
           this.submitLoading = false;
         }
       });
@@ -189,12 +189,12 @@ export class MyPostsComponent implements OnInit {
           this.showDeleteModal = false;
           this.postToDelete = null;
           this.removingId = null;
-          this.successMessage = 'Publication supprimée.';
+          this.successMessage = 'Post deleted.';
           setTimeout(() => (this.successMessage = ''), 4000);
         }, 280);
       },
       error: (e) => {
-        this.errorMessage = e.error?.message || 'Suppression impossible';
+        this.errorMessage = e.error?.message || 'Delete failed';
         this.deleteLoading = false;
         this.removingId = null;
         this.showDeleteModal = false;
@@ -259,21 +259,21 @@ export class MyPostsComponent implements OnInit {
     const now = new Date();
     const sec = Math.floor((now.getTime() - d.getTime()) / 1000);
     if (sec < 60) {
-      return "à l'instant";
+      return 'just now';
     }
     const min = Math.floor(sec / 60);
     if (min < 60) {
-      return `il y a ${min} min`;
+      return `${min} min ago`;
     }
     const h = Math.floor(min / 60);
     if (h < 24) {
-      return `il y a ${h} h`;
+      return `${h} h ago`;
     }
     const days = Math.floor(h / 24);
     if (days < 7) {
-      return `il y a ${days} j`;
+      return `${days} d ago`;
     }
-    return d.toLocaleDateString('fr-FR');
+    return d.toLocaleDateString('en-US');
   }
 
   getTypePillClass(type: PostType): string {

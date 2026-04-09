@@ -101,7 +101,7 @@ export class CampaignsComponent implements OnInit {
         this.loadVoteFlags();
       },
       error: (error) => {
-        this.errorMessage = error.error?.message || 'Échec du chargement des campagnes';
+        this.errorMessage = error.error?.message || 'Failed to load campaigns';
         this.isLoading = false;
       }
     });
@@ -210,9 +210,9 @@ export class CampaignsComponent implements OnInit {
         this.votingId = null;
       },
       error: (err: { status?: number; error?: { message?: string } }) => {
-        const msg = err.error?.message || 'Vote impossible';
+        const msg = err.error?.message || 'Vote failed';
         this.errorMessage = msg;
-        if (err.status === 409 || err.status === 400 || /already voted|déjà voté/i.test(msg)) {
+        if (err.status === 409 || err.status === 400 || /already voted/i.test(msg)) {
           this.hasVotedMap[c.id] = true;
         }
         this.votingId = null;

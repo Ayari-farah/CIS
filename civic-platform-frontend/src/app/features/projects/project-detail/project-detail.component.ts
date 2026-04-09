@@ -152,12 +152,12 @@ export class ProjectDetailComponent implements OnInit, OnDestroy {
         this.cd.markForCheck();
       },
       error: (err: { status?: number; error?: { message?: string } }) => {
-        const msg = err.error?.message || 'Vote impossible.';
+        const msg = err.error?.message || 'Vote failed.';
         this.errorMessage = msg;
         if (
           err.status === 409 ||
           err.status === 400 ||
-          /already voted|déjà voté/i.test(msg)
+          /already voted/i.test(msg)
         ) {
           this.voteState.markVoted(pid);
           this.hasVoted = true;
