@@ -16,6 +16,7 @@ public interface CommentMapper {
     @Mapping(target = "authorName", source = "author.userName")
     @Mapping(target = "authorEmail", source = "author.email")
     @Mapping(target = "postId", source = "post.id")
+    @Mapping(target = "attachments", ignore = true)
     CommentResponse toResponse(Comment comment);
     
     List<CommentResponse> toResponseList(List<Comment> comments);
@@ -24,11 +25,13 @@ public interface CommentMapper {
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "author", ignore = true)
     @Mapping(target = "post", ignore = true)
+    @Mapping(target = "attachments", ignore = true)
     Comment toEntity(CommentRequest commentRequest);
     
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "author", ignore = true)
     @Mapping(target = "post", ignore = true)
+    @Mapping(target = "attachments", ignore = true)
     void updateEntity(CommentRequest commentRequest, @MappingTarget Comment comment);
 }

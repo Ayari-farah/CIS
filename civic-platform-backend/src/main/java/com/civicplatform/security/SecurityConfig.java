@@ -1,6 +1,7 @@
 package com.civicplatform.security;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpMethod;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -41,6 +42,9 @@ public class SecurityConfig {
                 .requestMatchers("/admin/**").hasRole("ADMIN")
                 .requestMatchers("/metrics/**").hasRole("ADMIN")
                 .requestMatchers("/pdf/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.GET, "/users/*/profile-picture").permitAll()
+                .requestMatchers(HttpMethod.GET, "/posts/*/attachments/*").permitAll()
+                .requestMatchers(HttpMethod.GET, "/comments/*/attachments/*").permitAll()
                 .requestMatchers("/users/*/qrcode").authenticated()
                 .requestMatchers("/events/*/attendance/*/certificate/pdf").authenticated()
                 .anyRequest().authenticated()

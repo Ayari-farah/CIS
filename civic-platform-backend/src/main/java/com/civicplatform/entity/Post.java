@@ -28,8 +28,9 @@ public class Post {
     
     @Column(nullable = false)
     private String creator;
-    
-    @Column(nullable = false)
+
+    /** Nullable when the post is media-only (images/video attachments). */
+    @Column(columnDefinition = "TEXT")
     private String content;
     
     @Enumerated(EnumType.STRING)
@@ -59,4 +60,8 @@ public class Post {
     
     @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Like> likes;
+
+    @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @OrderBy("id ASC")
+    private List<PostAttachment> attachments;
 }

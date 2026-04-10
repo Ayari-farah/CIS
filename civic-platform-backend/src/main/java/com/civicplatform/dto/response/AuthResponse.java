@@ -43,4 +43,6 @@ public class AuthResponse {
     private LocalDate birthDate;
 
     private BadgeProgressInfo badgeProgress;
+
+    private Boolean hasProfilePicture;
 }

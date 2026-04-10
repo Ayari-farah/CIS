@@ -7,12 +7,15 @@ import com.civicplatform.enums.UserType;
 import com.civicplatform.entity.User;
 import com.civicplatform.repository.UserRepository;
 import com.civicplatform.security.RegularAccountPolicy;
+import com.civicplatform.service.ProfilePictureStorageService;
 import com.civicplatform.service.QrCodeService;
 import com.civicplatform.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.io.Resource;
+import org.springframework.http.CacheControl;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -21,8 +24,11 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 @RestController
 @RequestMapping("/users")
@@ -33,6 +39,7 @@ public class UserController {
     private final UserService userService;
     private final UserRepository userRepository;
     private final QrCodeService qrCodeService;
+    private final ProfilePictureStorageService profilePictureStorageService;
 
     @Operation(summary = "Create a new user")
     @PostMapping
@@ -51,6 +58,61 @@ public class UserController {
             throw new AccessDeniedException("Platform admin accounts do not have a participant profile. Use admin tools.");
         }
         return ResponseEntity.ok(userService.getUserByEmail(user.getEmail()));
+    }
+
+    @Operation(summary = "Get profile picture image (public URL for img tags)")
+    @GetMapping("/{id}/profile-picture")
+    public ResponseEntity<Resource> getProfilePicture(@PathVariable Long id) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found with id: " + id));
+        if (user.isAdmin()) {
+            return ResponseEntity.notFound().build();
+        }
+        String ext = user.getProfilePictureExtension();
+        if (ext == null || ext.isBlank()) {
+            return ResponseEntity.notFound().build();
+        }
+        try {
+            Resource resource = profilePictureStorageService.loadAsResource(user.getId(), ext);
+            if (resource == null || !resource.exists() || !resource.isReadable()) {
+                return ResponseEntity.notFound().build();
+            }
+            return ResponseEntity.ok()
+                    .contentType(mediaTypeForExtension(ext))
+                    .cacheControl(CacheControl.maxAge(1, TimeUnit.HOURS).cachePublic())
+                    .body(resource);
+        } catch (IOException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    private static MediaType mediaTypeForExtension(String ext) {
+        String e = ext.toLowerCase();
+        return switch (e) {
+            case "jpg", "jpeg" -> MediaType.IMAGE_JPEG;
+            case "png" -> MediaType.IMAGE_PNG;
+            case "webp" -> MediaType.parseMediaType("image/webp");
+            default -> MediaType.APPLICATION_OCTET_STREAM;
+        };
+    }
+
+    @Operation(summary = "Upload profile picture (JPEG, PNG, or WebP)")
+    @PostMapping("/{id}/profile-picture")
+    public ResponseEntity<UserResponse> uploadProfilePicture(
+            @PathVariable Long id,
+            @RequestParam("file") MultipartFile file,
+            Authentication authentication) {
+        User authUser = userRepository.findByEmail(authentication.getName())
+                .orElseThrow(() -> new AccessDeniedException("User not resolved"));
+        if (authUser.isAdmin()) {
+            throw new AccessDeniedException("Admins do not have participant profiles.");
+        }
+        UserResponse current = userService.getUserById(id);
+        if (!authentication.getName().equalsIgnoreCase(current.getEmail())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        UserResponse response = userService.uploadProfilePicture(id, file);
+        return ResponseEntity.ok(response);
     }
 
     @Operation(summary = "Download PNG QR code with user identity (plain-text CivicIdentity payload)")

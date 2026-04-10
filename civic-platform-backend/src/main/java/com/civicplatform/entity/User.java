@@ -82,6 +82,10 @@ public class User implements UserDetails {
     private String phone;
     private LocalDate birthDate;
 
+    /** File extension only (e.g. jpg, png, webp); null means no custom profile picture. */
+    @Column(name = "profile_picture_extension", length = 10)
+    private String profilePictureExtension;
+
     @Column(nullable = true)
     private Integer points;
 

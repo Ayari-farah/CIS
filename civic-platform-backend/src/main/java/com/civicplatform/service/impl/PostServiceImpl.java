@@ -1,21 +1,30 @@
 package com.civicplatform.service.impl;
 
 import com.civicplatform.dto.request.PostRequest;
+import com.civicplatform.dto.response.MediaAttachmentDto;
 import com.civicplatform.dto.response.PostResponse;
 import com.civicplatform.entity.Campaign;
 import com.civicplatform.entity.Post;
+import com.civicplatform.entity.PostAttachment;
 import com.civicplatform.entity.User;
 import com.civicplatform.enums.PostStatus;
+import com.civicplatform.enums.PostType;
 import com.civicplatform.mapper.PostMapper;
 import com.civicplatform.repository.CampaignRepository;
+import com.civicplatform.repository.PostAttachmentRepository;
 import com.civicplatform.repository.PostRepository;
 import com.civicplatform.repository.UserRepository;
+import com.civicplatform.service.PostMediaStorageService;
 import com.civicplatform.service.PostService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -23,10 +32,14 @@ import java.util.stream.Collectors;
 @Transactional(readOnly = true)
 public class PostServiceImpl implements PostService {
 
+    private static final int MAX_MEDIA_FILES = 10;
+
     private final PostRepository postRepository;
     private final UserRepository userRepository;
     private final CampaignRepository campaignRepository;
     private final PostMapper postMapper;
+    private final PostAttachmentRepository postAttachmentRepository;
+    private final PostMediaStorageService postMediaStorageService;
 
     @Override
     @Transactional(readOnly = false)
@@ -44,38 +57,127 @@ public class PostServiceImpl implements PostService {
         }
 
         post = postRepository.save(post);
-        return postMapper.toResponse(post);
+        PostResponse r = postMapper.toResponse(post);
+        r.setAttachments(List.of());
+        return r;
+    }
+
+    @Override
+    @Transactional(readOnly = false)
+    public PostResponse createPostWithMedia(String content, PostType type, Long campaignId, List<MultipartFile> files, Long authorId) {
+        List<MultipartFile> fileList = files == null ? List.of() : files;
+        if (fileList.size() > MAX_MEDIA_FILES) {
+            throw new IllegalArgumentException("At most " + MAX_MEDIA_FILES + " media files per post.");
+        }
+        String text = content == null ? null : content.trim();
+        if ((text == null || text.isEmpty()) && fileList.stream().allMatch(f -> f == null || f.isEmpty())) {
+            throw new IllegalArgumentException("Post must have text or at least one media file.");
+        }
+
+        User author = userRepository.findById(authorId)
+                .orElseThrow(() -> new RuntimeException("User not found with id: " + authorId));
+
+        Post post = Post.builder()
+                .creator(author.getUserName())
+                .content(emptyToNull(text))
+                .type(type)
+                .status(PostStatus.PENDING)
+                .likesCount(0)
+                .build();
+        if (campaignId != null) {
+            Campaign campaign = campaignRepository.findById(campaignId)
+                    .orElseThrow(() -> new RuntimeException("Campaign not found with id: " + campaignId));
+            post.setCampaign(campaign);
+        }
+        post = postRepository.save(post);
+
+        for (MultipartFile file : fileList) {
+            if (file == null || file.isEmpty()) {
+                continue;
+            }
+            try {
+                PostAttachment att = postMediaStorageService.storePostFile(post, file);
+                postAttachmentRepository.save(att);
+            } catch (IOException e) {
+                throw new RuntimeException("Failed to store media attachment.", e);
+            }
+        }
+
+        Post refreshed = postRepository.findById(post.getId()).orElseThrow();
+        PostResponse r = postMapper.toSummaryResponse(refreshed);
+        r.setAttachments(toPostAttachmentDtos(refreshed.getId(),
+                postAttachmentRepository.findByPost_IdOrderByIdAsc(refreshed.getId())));
+        return r;
+    }
+
+    private static String emptyToNull(String s) {
+        if (s == null || s.isEmpty()) {
+            return null;
+        }
+        return s;
     }
 
     @Override
     public PostResponse getPostById(Long id) {
         Post post = postRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Post not found with id: " + id));
-        return postMapper.toResponse(post);
+        PostResponse r = postMapper.toResponse(post);
+        r.setAttachments(toPostAttachmentDtos(post.getId(),
+                postAttachmentRepository.findByPost_IdOrderByIdAsc(post.getId())));
+        return r;
     }
 
     @Override
     public List<PostResponse> getAllPosts() {
         List<Post> posts = postRepository.findAll();
-        return posts.stream().map(postMapper::toSummaryResponse).collect(Collectors.toList());
+        return mapPostsWithAttachments(posts);
     }
 
     @Override
     public List<PostResponse> getPostsByCreator(String creator) {
         List<Post> posts = postRepository.findByCreator(creator);
-        return posts.stream().map(postMapper::toSummaryResponse).collect(Collectors.toList());
+        return mapPostsWithAttachments(posts);
     }
 
     @Override
     public List<PostResponse> getPostsByStatus(PostStatus status) {
         List<Post> posts = postRepository.findByStatus(status);
-        return posts.stream().map(postMapper::toSummaryResponse).collect(Collectors.toList());
+        return mapPostsWithAttachments(posts);
     }
 
     @Override
     public List<PostResponse> getPostsByCampaign(Long campaignId) {
         List<Post> posts = postRepository.findByCampaignId(campaignId);
-        return posts.stream().map(postMapper::toSummaryResponse).collect(Collectors.toList());
+        return mapPostsWithAttachments(posts);
+    }
+
+    private List<PostResponse> mapPostsWithAttachments(List<Post> posts) {
+        List<Long> ids = posts.stream().map(Post::getId).toList();
+        if (ids.isEmpty()) {
+            return List.of();
+        }
+        List<PostAttachment> all = postAttachmentRepository.findByPost_IdIn(ids);
+        Map<Long, List<PostAttachment>> byPost = all.stream()
+                .collect(Collectors.groupingBy(a -> a.getPost().getId()));
+        return posts.stream().map(p -> {
+            PostResponse r = postMapper.toSummaryResponse(p);
+            List<PostAttachment> atts = byPost.getOrDefault(p.getId(), List.of()).stream()
+                    .sorted(Comparator.comparing(PostAttachment::getId))
+                    .toList();
+            r.setAttachments(toPostAttachmentDtos(p.getId(), atts));
+            return r;
+        }).collect(Collectors.toList());
+    }
+
+    private List<MediaAttachmentDto> toPostAttachmentDtos(Long postId, List<PostAttachment> list) {
+        if (list == null || list.isEmpty()) {
+            return List.of();
+        }
+        return list.stream().map(a -> MediaAttachmentDto.builder()
+                .id(a.getId())
+                .kind(a.getKind().name())
+                .url("/posts/" + postId + "/attachments/" + a.getId())
+                .build()).collect(Collectors.toList());
     }
 
     @Override
@@ -93,16 +195,19 @@ public class PostServiceImpl implements PostService {
         }
 
         post = postRepository.save(post);
-        return postMapper.toResponse(post);
+        PostResponse r = postMapper.toResponse(post);
+        r.setAttachments(toPostAttachmentDtos(post.getId(),
+                postAttachmentRepository.findByPost_IdOrderByIdAsc(post.getId())));
+        return r;
     }
 
     @Override
     @Transactional(readOnly = false)
     public void deletePost(Long id) {
-        if (!postRepository.existsById(id)) {
-            throw new RuntimeException("Post not found with id: " + id);
-        }
-        postRepository.deleteById(id);
+        Post post = postRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Post not found with id: " + id));
+        postMediaStorageService.deletePostFolder(id);
+        postRepository.delete(post);
     }
 
     @Override
@@ -110,10 +215,13 @@ public class PostServiceImpl implements PostService {
     public PostResponse approvePost(Long id) {
         Post post = postRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Post not found with id: " + id));
-        
+
         post.setStatus(PostStatus.ACCEPTED);
         post = postRepository.save(post);
-        return postMapper.toResponse(post);
+        PostResponse r = postMapper.toResponse(post);
+        r.setAttachments(toPostAttachmentDtos(post.getId(),
+                postAttachmentRepository.findByPost_IdOrderByIdAsc(post.getId())));
+        return r;
     }
 
     @Override
@@ -121,9 +229,12 @@ public class PostServiceImpl implements PostService {
     public PostResponse rejectPost(Long id) {
         Post post = postRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Post not found with id: " + id));
-        
+
         post.setStatus(PostStatus.REJECTED);
         post = postRepository.save(post);
-        return postMapper.toResponse(post);
+        PostResponse r = postMapper.toResponse(post);
+        r.setAttachments(toPostAttachmentDtos(post.getId(),
+                postAttachmentRepository.findByPost_IdOrderByIdAsc(post.getId())));
+        return r;
     }
 }

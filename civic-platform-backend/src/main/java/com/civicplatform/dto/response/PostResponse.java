@@ -26,4 +26,5 @@ public class PostResponse {
     private Long campaignId;
     private String campaignName;
     private List<CommentResponse> comments;
+    private List<MediaAttachmentDto> attachments;
 }

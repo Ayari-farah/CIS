@@ -2,21 +2,30 @@ package com.civicplatform.controller;
 
 import com.civicplatform.dto.request.PostRequest;
 import com.civicplatform.dto.response.PostResponse;
+import com.civicplatform.entity.PostAttachment;
 import com.civicplatform.entity.User;
 import com.civicplatform.enums.PostStatus;
+import com.civicplatform.enums.PostType;
+import com.civicplatform.repository.PostAttachmentRepository;
 import com.civicplatform.repository.UserRepository;
 import com.civicplatform.security.RegularAccountPolicy;
+import com.civicplatform.service.PostMediaStorageService;
 import com.civicplatform.service.PostService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.io.Resource;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 
 @RestController
@@ -27,15 +36,57 @@ public class PostController {
 
     private final PostService postService;
     private final UserRepository userRepository;
+    private final PostAttachmentRepository postAttachmentRepository;
+    private final PostMediaStorageService postMediaStorageService;
 
-    @Operation(summary = "Create a new post")
-    @PostMapping
+    @Operation(summary = "Create a new post (JSON body)")
+    @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<PostResponse> createPost(@Valid @RequestBody PostRequest postRequest, Authentication authentication) {
         User user = getUserFromAuthentication(authentication);
         RegularAccountPolicy.requireRegularUser(user);
         Long userId = user.getId();
         PostResponse response = postService.createPost(postRequest, userId);
         return new ResponseEntity<>(response, HttpStatus.CREATED);
+    }
+
+    @Operation(summary = "Create a new post with optional image/video attachments")
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<PostResponse> createPostMultipart(
+            @RequestParam(required = false) String content,
+            @RequestParam String type,
+            @RequestParam(required = false) Long campaignId,
+            @RequestParam(value = "files", required = false) MultipartFile[] files,
+            Authentication authentication) {
+        User user = getUserFromAuthentication(authentication);
+        RegularAccountPolicy.requireRegularUser(user);
+        PostType postType = PostType.valueOf(type.trim());
+        List<MultipartFile> list = files == null ? List.of() : Arrays.asList(files);
+        PostResponse response = postService.createPostWithMedia(content, postType, campaignId, list, user.getId());
+        return new ResponseEntity<>(response, HttpStatus.CREATED);
+    }
+
+    @Operation(summary = "Download a post media attachment (image or video)")
+    @GetMapping("/{postId}/attachments/{attachmentId}")
+    public ResponseEntity<Resource> getPostAttachment(
+            @PathVariable Long postId,
+            @PathVariable Long attachmentId) {
+        PostAttachment a = postAttachmentRepository.findById(attachmentId)
+                .orElseThrow(() -> new RuntimeException("Attachment not found"));
+        if (!a.getPost().getId().equals(postId)) {
+            return ResponseEntity.notFound().build();
+        }
+        try {
+            Resource resource = postMediaStorageService.loadPostResource(postId, a.getFilename());
+            if (resource == null || !resource.exists() || !resource.isReadable()) {
+                return ResponseEntity.notFound().build();
+            }
+            MediaType mt = a.getMimeType() != null
+                    ? MediaType.parseMediaType(a.getMimeType())
+                    : MediaType.APPLICATION_OCTET_STREAM;
+            return ResponseEntity.ok().contentType(mt).body(resource);
+        } catch (IOException e) {
+            return ResponseEntity.notFound().build();
+        }
     }
 
     @Operation(summary = "Get all posts")

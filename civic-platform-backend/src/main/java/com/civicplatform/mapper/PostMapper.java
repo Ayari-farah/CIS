@@ -19,6 +19,7 @@ public interface PostMapper {
     @Mapping(target = "campaignId", source = "campaign.id")
     @Mapping(target = "campaignName", source = "campaign.name")
     @Mapping(target = "comments", source = "comments")
+    @Mapping(target = "attachments", ignore = true)
     PostResponse toResponse(Post post);
 
     /**
@@ -28,6 +29,7 @@ public interface PostMapper {
     @Mapping(target = "campaignId", source = "campaign.id")
     @Mapping(target = "campaignName", source = "campaign.name")
     @Mapping(target = "comments", ignore = true)
+    @Mapping(target = "attachments", ignore = true)
     PostResponse toSummaryResponse(Post post);
 
     @Named("mapPostListToSummary")
@@ -45,6 +47,7 @@ public interface PostMapper {
     @Mapping(target = "campaign", ignore = true)
     @Mapping(target = "comments", ignore = true)
     @Mapping(target = "likes", ignore = true)
+    @Mapping(target = "attachments", ignore = true)
     Post toEntity(PostRequest postRequest);
     
     @AfterMapping
@@ -65,6 +68,7 @@ public interface PostMapper {
     @Mapping(target = "campaign", ignore = true)
     @Mapping(target = "comments", ignore = true)
     @Mapping(target = "likes", ignore = true)
+    @Mapping(target = "attachments", ignore = true)
     void updateEntity(PostRequest postRequest, @MappingTarget Post post);
     
     @Named("getCreatorName")

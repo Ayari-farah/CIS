@@ -8,6 +8,11 @@ server:
 spring:
   application:
     name: civic-platform-backend
+
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 55MB
   
   datasource:
     url: jdbc:mariadb://localhost:3306/civic_platform?createDatabaseIfNotExist=true
@@ -45,6 +50,13 @@ cors:
   allowed-methods: GET,POST,PUT,DELETE,OPTIONS
   allowed-headers: "*"
   allow-credentials: true
+
+# Profile picture storage (per-user file: {id}.{ext})
+app:
+  upload:
+    profile-dir: ${user.home}/.civic-platform/uploads/profile
+    post-media-dir: ${user.home}/.civic-platform/uploads/post-media
+    comment-media-dir: ${user.home}/.civic-platform/uploads/comment-media
 
 # JWT Configuration
 jwt:

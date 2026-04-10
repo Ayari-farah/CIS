@@ -14,6 +14,7 @@ import java.time.format.DateTimeFormatter;
 @Mapper(componentModel = "spring")
 public interface UserMapper {
 
+    @Mapping(target = "hasProfilePicture", expression = "java(user.getProfilePictureExtension() != null && !user.getProfilePictureExtension().isBlank())")
     UserResponse toResponse(User user);
 
     @Mapping(target = "password", ignore = true)
@@ -27,8 +28,10 @@ public interface UserMapper {
     @Mapping(target = "campaignVotes", ignore = true)
     @Mapping(target = "refreshTokens", ignore = true)
     @Mapping(target = "admin", ignore = true)
+    @Mapping(target = "profilePictureExtension", ignore = true)
     User toEntity(UserRequest userRequest);
 
+    @Mapping(target = "profilePictureExtension", ignore = true)
     void updateEntity(UserRequest userRequest, @MappingTarget User user);
 
     @Mapping(target = "password", ignore = true)
@@ -44,6 +47,7 @@ public interface UserMapper {
     @Mapping(target = "badge", ignore = true)
     @Mapping(target = "points", ignore = true)
     @Mapping(target = "admin", ignore = true)
+    @Mapping(target = "profilePictureExtension", ignore = true)
     User toEntityForCreate(UserRequest userRequest);
 
     @Named("stringToLocalDate")

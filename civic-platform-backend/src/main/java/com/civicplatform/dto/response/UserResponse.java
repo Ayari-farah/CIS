@@ -49,4 +49,7 @@ public class UserResponse {
 
     /** Progress toward next badge (see BadgeService). */
     private BadgeProgressInfo badgeProgress;
+
+    /** True when the user has uploaded a profile picture (GET `/users/{id}/profile-picture`). */
+    private Boolean hasProfilePicture;
 }

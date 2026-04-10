@@ -10,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.PDPageContentStream;
+import org.apache.pdfbox.pdmodel.common.PDRectangle;
 import org.apache.pdfbox.pdmodel.font.PDType1Font;
 import org.apache.pdfbox.pdmodel.font.Standard14Fonts;
 import org.springframework.stereotype.Service;
@@ -19,8 +20,10 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Locale;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Map;
 
 @Service
@@ -178,13 +181,18 @@ public class PdfServiceImpl implements PdfService {
         }
     }
 
+    private static final float METRICS_TABLE_HEADER_H = 22f;
+    private static final float METRICS_ROW_H = 20f;
+    private static final float METRICS_SECTION_TITLE_H = 26f;
+
     @Override
     public ByteArrayOutputStream generateMetricsReport() {
         DashboardStatsResponse stats = dashboardService.getDashboardStats();
         try (PDDocument document = new PDDocument();
              ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
 
-            PDPage page = new PDPage();
+            /* A4 gives a bit more vertical room for four structured tables */
+            PDPage page = new PDPage(PDRectangle.A4);
             document.addPage(page);
             float pageW = page.getMediaBox().getWidth();
             float pageH = page.getMediaBox().getHeight();
@@ -193,118 +201,81 @@ public class PdfServiceImpl implements PdfService {
             PDType1Font regular = new PDType1Font(Standard14Fonts.FontName.HELVETICA);
 
             try (PDPageContentStream cs = new PDPageContentStream(document, page)) {
-                // --- Header band ---
-                cs.setNonStrokingColor(HDR_R, HDR_G, HDR_B);
-                cs.addRect(0, pageH - HEADER_H, pageW, HEADER_H);
-                cs.fill();
+                drawMetricsCoverHeader(cs, bold, regular, pageW, pageH);
 
-                cs.setNonStrokingColor(1f, 1f, 1f);
-                cs.beginText();
-                cs.setFont(bold, 22f);
-                cs.newLineAtOffset(MARGIN, pageH - HEADER_H + 52f);
-                cs.showText(pdfSafe("Impact Metrics"));
-                cs.endText();
-                cs.beginText();
-                cs.setFont(regular, 11f);
-                cs.newLineAtOffset(MARGIN, pageH - HEADER_H + 30f);
-                cs.showText(pdfSafe("Civic Platform  -  Administrative overview"));
-                cs.endText();
-
-                float y = pageH - HEADER_H - 28f;
-
-                cs.setNonStrokingColor(0.45f, 0.48f, 0.52f);
+                float y = pageH - HEADER_H - 32f;
+                cs.setNonStrokingColor(0.42f, 0.45f, 0.5f);
                 cs.beginText();
                 cs.setFont(regular, 10f);
                 cs.newLineAtOffset(MARGIN, y);
-                cs.showText(pdfSafe("Generated " + LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE)));
+                cs.showText(pdfSafe("Generated: " + LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE)));
                 cs.endText();
-                y -= 28f;
+                y -= 14f;
+                cs.beginText();
+                cs.setFont(regular, 9f);
+                cs.newLineAtOffset(MARGIN, y);
+                cs.showText(pdfSafe("Document layout: numbered sections with bordered data tables. User directory exports: Admin > Reports."));
+                cs.endText();
+                y -= 22f;
 
-                drawRule(cs, MARGIN, pageW - MARGIN, y);
-                y -= 20f;
-
-                // --- KPI grid (2 columns x 3 rows) ---
-                String funding = formatMoney(stats.getTotalFundingAmount());
-                String[][] kpi = {
-                        {"Total funding", funding},
+                String funding = formatMoneyTnd(stats.getTotalFundingAmount());
+                String[][] kpiRows = {
+                        {"Total funding (TND)", funding},
                         {"Total projects", nz(stats.getTotalProjects())},
                         {"Total events", nz(stats.getTotalEvents())},
                         {"Active volunteers", nz(stats.getActiveVolunteers())},
                         {"Active donors", nz(stats.getActiveDonors())},
-                        {"Associations (donor type)", nz(stats.getActiveAssociations())}
+                        {"Associations (donor accounts)", nz(stats.getActiveAssociations())}
                 };
-                float gap = 12f;
-                float cardW = (pageW - 2 * MARGIN - gap) / 2f;
-                float cardH = 56f;
-                float rowY = y;
-                for (int i = 0; i < kpi.length; i++) {
-                    float x = MARGIN + (i % 2) * (cardW + gap);
-                    drawMetricCard(cs, bold, regular, x, rowY, cardW, cardH, kpi[i][0], kpi[i][1]);
-                    if (i % 2 == 1) {
-                        rowY -= cardH + gap;
-                    }
-                }
-                y = rowY - 8f;
-
-                // --- Secondary stats ---
-                y -= 6f;
-                cs.setNonStrokingColor(0.12f, 0.14f, 0.18f);
-                cs.beginText();
-                cs.setFont(bold, 13f);
-                cs.newLineAtOffset(MARGIN, y);
-                cs.showText(pdfSafe("Environmental snapshot"));
-                cs.endText();
-                y -= 22f;
+                y = drawMetricsSectionWithTable(cs, bold, regular, pageW, MARGIN, y,
+                        "1. Platform KPIs (snapshot)", "Metric", "Value", kpiRows);
 
                 String co2 = stats.getTotalCo2Saved() != null ? stats.getTotalCo2Saved().toPlainString() : "0";
                 String meals = stats.getTotalMealsDistributed() != null ? String.valueOf(stats.getTotalMealsDistributed()) : "0";
                 String region = stats.getMostActiveRegion() != null ? stats.getMostActiveRegion() : "N/A";
-                y = addLabelValueLine(cs, regular, MARGIN, y, "CO2 saved (kg, model)", co2);
-                y = addLabelValueLine(cs, regular, MARGIN, y, "Meals distributed (model)", meals);
-                y = addLabelValueLine(cs, regular, MARGIN, y, "Most active region", region);
-                y -= 16f;
+                String[][] envRows = {
+                        {"CO2 saved (kg, model)", co2},
+                        {"Meals distributed (model)", meals},
+                        {"Most active region", region}
+                };
+                y = drawMetricsSectionWithTable(cs, bold, regular, pageW, MARGIN, y,
+                        "2. Environmental impact (reported model)", "Indicator", "Value", envRows);
 
-                drawRule(cs, MARGIN, pageW - MARGIN, y);
-                y -= 20f;
-
-                cs.beginText();
-                cs.setFont(bold, 13f);
-                cs.newLineAtOffset(MARGIN, y);
-                cs.showText(pdfSafe("Users by type"));
-                cs.endText();
-                y -= 20f;
                 Map<String, Long> usersByType = stats.getTotalUsersByType() != null
                         ? stats.getTotalUsersByType()
                         : Collections.emptyMap();
-                for (Map.Entry<String, Long> e : usersByType.entrySet()) {
-                    y = addLabelValueLine(cs, regular, MARGIN + 8f, y, e.getKey(), String.valueOf(e.getValue()));
+                List<Map.Entry<String, Long>> userEntries = new ArrayList<>(usersByType.entrySet());
+                userEntries.sort(Comparator.comparing(Map.Entry::getKey));
+                String[][] userRows = new String[userEntries.size()][2];
+                for (int i = 0; i < userEntries.size(); i++) {
+                    Map.Entry<String, Long> e = userEntries.get(i);
+                    userRows[i][0] = e.getKey();
+                    userRows[i][1] = String.valueOf(e.getValue());
                 }
-                y -= 12f;
+                if (userRows.length == 0) {
+                    userRows = new String[][]{{"(no data)", "0"}};
+                }
+                y = drawMetricsSectionWithTable(cs, bold, regular, pageW, MARGIN, y,
+                        "3. Registered users by role (counts)", "Role", "Count", userRows);
 
-                drawRule(cs, MARGIN, pageW - MARGIN, y);
-                y -= 20f;
-
-                cs.beginText();
-                cs.setFont(bold, 13f);
-                cs.newLineAtOffset(MARGIN, y);
-                cs.showText(pdfSafe("Campaigns by status"));
-                cs.endText();
-                y -= 20f;
                 Map<String, Long> camps = stats.getTotalCampaignsByStatus() != null
                         ? stats.getTotalCampaignsByStatus()
                         : Collections.emptyMap();
-                for (Map.Entry<String, Long> e : camps.entrySet()) {
-                    y = addLabelValueLine(cs, regular, MARGIN + 8f, y, e.getKey(), String.valueOf(e.getValue()));
+                List<Map.Entry<String, Long>> campEntries = new ArrayList<>(camps.entrySet());
+                campEntries.sort(Comparator.comparing(Map.Entry::getKey));
+                String[][] campRows = new String[campEntries.size()][2];
+                for (int i = 0; i < campEntries.size(); i++) {
+                    Map.Entry<String, Long> e = campEntries.get(i);
+                    campRows[i][0] = e.getKey();
+                    campRows[i][1] = String.valueOf(e.getValue());
                 }
+                if (campRows.length == 0) {
+                    campRows = new String[][]{{"(no data)", "0"}};
+                }
+                y = drawMetricsSectionWithTable(cs, bold, regular, pageW, MARGIN, y,
+                        "4. Campaigns by status", "Status", "Count", campRows);
 
-                // Footer
-                float fy = MARGIN;
-                cs.setNonStrokingColor(0.65f, 0.68f, 0.72f);
-                cs.beginText();
-                cs.setFont(regular, 9f);
-                cs.newLineAtOffset(MARGIN, fy);
-                cs.showText(pdfSafe("Civic Platform  -  Confidential  -  metrics-export.pdf"));
-                cs.endText();
+                drawMetricsPageFooter(cs, regular, pageW, pageH);
             }
 
             document.save(outputStream);
@@ -316,67 +287,147 @@ public class PdfServiceImpl implements PdfService {
         }
     }
 
-    private static void drawRule(PDPageContentStream cs, float x1, float x2, float y) throws IOException {
-        cs.setStrokingColor(0.85f, 0.88f, 0.91f);
-        cs.setLineWidth(0.75f);
-        cs.moveTo(x1, y);
-        cs.lineTo(x2, y);
-        cs.stroke();
-    }
-
-    private static void drawMetricCard(PDPageContentStream cs, PDType1Font bold, PDType1Font regular,
-                                       float x, float yTop, float w, float h,
-                                       String label, String value) throws IOException {
-        cs.setNonStrokingColor(0.97f, 0.98f, 0.99f);
-        cs.addRect(x, yTop - h, w, h);
+    /** Emerald cover band + titles (matches Civic Platform admin theme). */
+    private void drawMetricsCoverHeader(PDPageContentStream cs, PDType1Font bold, PDType1Font regular, float pageW, float pageH)
+            throws IOException {
+        cs.setNonStrokingColor(HDR_R, HDR_G, HDR_B);
+        cs.addRect(0, pageH - HEADER_H, pageW, HEADER_H);
         cs.fill();
-        cs.setStrokingColor(0.88f, 0.91f, 0.93f);
-        cs.setLineWidth(0.5f);
-        cs.addRect(x, yTop - h, w, h);
-        cs.stroke();
-
-        cs.setNonStrokingColor(0.42f, 0.45f, 0.5f);
+        cs.setNonStrokingColor(1f, 1f, 1f);
         cs.beginText();
-        cs.setFont(regular, 9f);
-        cs.newLineAtOffset(x + 10f, yTop - 20f);
-        cs.showText(pdfSafe(label.toUpperCase(Locale.ROOT)));
+        cs.setFont(bold, 22f);
+        cs.newLineAtOffset(MARGIN, pageH - HEADER_H + 52f);
+        cs.showText(pdfSafe("Civic Platform"));
         cs.endText();
-
-        cs.setNonStrokingColor(0.08f, 0.1f, 0.12f);
         cs.beginText();
-        cs.setFont(bold, 15f);
-        cs.newLineAtOffset(x + 10f, yTop - 42f);
-        cs.showText(pdfSafe(value));
+        cs.setFont(bold, 14f);
+        cs.newLineAtOffset(MARGIN, pageH - HEADER_H + 30f);
+        cs.showText(pdfSafe("Structured metrics export"));
+        cs.endText();
+        cs.beginText();
+        cs.setFont(regular, 10f);
+        cs.newLineAtOffset(MARGIN, pageH - HEADER_H + 12f);
+        cs.showText(pdfSafe("Operational dashboard figures in fixed-column tables"));
         cs.endText();
     }
 
-    private static float addLabelValueLine(PDPageContentStream cs, PDType1Font regular, float x, float y,
-                                          String label, String value) throws IOException {
-        cs.setNonStrokingColor(0.35f, 0.38f, 0.42f);
+    /**
+     * Section title strip + bordered two-column table (header row + zebra rows).
+     *
+     * @return y-coordinate of the bottom spacing below the table (PDF coords: from bottom of page).
+     */
+    private float drawMetricsSectionWithTable(PDPageContentStream cs, PDType1Font bold, PDType1Font regular,
+                                            float pageW, float margin, float yTop,
+                                            String sectionTitle, String col1Header, String col2Header,
+                                            String[][] rows) throws IOException {
+        float titleBottom = yTop - METRICS_SECTION_TITLE_H;
+        cs.setNonStrokingColor(0.90f, 0.95f, 0.93f);
+        cs.addRect(margin, titleBottom, pageW - 2 * margin, METRICS_SECTION_TITLE_H);
+        cs.fill();
+        cs.setStrokingColor(0.55f, 0.75f, 0.68f);
+        cs.setLineWidth(0.75f);
+        cs.addRect(margin, titleBottom, pageW - 2 * margin, METRICS_SECTION_TITLE_H);
+        cs.stroke();
+        cs.setNonStrokingColor(0.04f, 0.32f, 0.22f);
         cs.beginText();
-        cs.setFont(regular, 10f);
-        cs.newLineAtOffset(x, y);
-        cs.showText(pdfSafe(label));
+        cs.setFont(bold, 11f);
+        cs.newLineAtOffset(margin + 10f, titleBottom + 9f);
+        cs.showText(pdfSafe(sectionTitle));
         cs.endText();
-        float labelW = regular.getStringWidth(pdfSafe(label)) / 1000f * 10f;
-        cs.setNonStrokingColor(0.1f, 0.12f, 0.15f);
+
+        float tableTop = titleBottom - 6f;
+        float tableW = pageW - 2 * margin;
+        float c1w = tableW * 0.58f;
+        float xSplit = margin + c1w;
+
+        // Table header (dark green)
+        float hdrBottom = tableTop - METRICS_TABLE_HEADER_H;
+        cs.setNonStrokingColor(0.04f, 0.42f, 0.31f);
+        cs.addRect(margin, hdrBottom, tableW, METRICS_TABLE_HEADER_H);
+        cs.fill();
+        cs.setNonStrokingColor(1f, 1f, 1f);
         cs.beginText();
-        cs.setFont(regular, 10f);
-        cs.newLineAtOffset(x + Math.max(200f, labelW + 24f), y);
-        cs.showText(pdfSafe(value));
+        cs.setFont(bold, 10f);
+        cs.newLineAtOffset(margin + 8f, hdrBottom + 7f);
+        cs.showText(pdfSafe(col1Header));
         cs.endText();
-        return y - 16f;
+        cs.beginText();
+        cs.setFont(bold, 10f);
+        cs.newLineAtOffset(xSplit + 8f, hdrBottom + 7f);
+        cs.showText(pdfSafe(col2Header));
+        cs.endText();
+        cs.setStrokingColor(0.55f, 0.70f, 0.62f);
+        cs.setLineWidth(0.5f);
+        cs.moveTo(xSplit, hdrBottom);
+        cs.lineTo(xSplit, tableTop);
+        cs.stroke();
+
+        float rowTop = hdrBottom;
+        for (int i = 0; i < rows.length; i++) {
+            float rb = rowTop - METRICS_ROW_H;
+            boolean zebra = i % 2 == 0;
+            cs.setNonStrokingColor(zebra ? 0.99f : 0.96f, zebra ? 0.99f : 0.97f, zebra ? 1f : 0.985f);
+            cs.addRect(margin, rb, tableW, METRICS_ROW_H);
+            cs.fill();
+            cs.setStrokingColor(0.82f, 0.86f, 0.90f);
+            cs.setLineWidth(0.4f);
+            cs.addRect(margin, rb, tableW, METRICS_ROW_H);
+            cs.stroke();
+            cs.setStrokingColor(0.82f, 0.86f, 0.90f);
+            cs.moveTo(xSplit, rb);
+            cs.lineTo(xSplit, rowTop);
+            cs.stroke();
+
+            cs.setNonStrokingColor(0.18f, 0.20f, 0.24f);
+            cs.beginText();
+            cs.setFont(regular, 9.5f);
+            cs.newLineAtOffset(margin + 8f, rb + 6f);
+            cs.showText(pdfSafe(rows[i][0]));
+            cs.endText();
+            cs.beginText();
+            cs.setFont(bold, 9.5f);
+            cs.newLineAtOffset(xSplit + 8f, rb + 6f);
+            cs.showText(pdfSafe(rows[i][1]));
+            cs.endText();
+            rowTop = rb;
+        }
+
+        float tableBottom = rowTop;
+        cs.setStrokingColor(0.45f, 0.50f, 0.55f);
+        cs.setLineWidth(1f);
+        cs.addRect(margin, tableBottom, tableW, tableTop - tableBottom);
+        cs.stroke();
+
+        return tableBottom - 18f;
+    }
+
+    private void drawMetricsPageFooter(PDPageContentStream cs, PDType1Font regular, float pageW, float pageH) throws IOException {
+        float fh = 28f;
+        cs.setNonStrokingColor(0.94f, 0.96f, 0.98f);
+        cs.addRect(0, 0, pageW, fh);
+        cs.fill();
+        cs.setStrokingColor(0.80f, 0.84f, 0.88f);
+        cs.setLineWidth(0.5f);
+        cs.moveTo(0, fh);
+        cs.lineTo(pageW, fh);
+        cs.stroke();
+        cs.setNonStrokingColor(0.45f, 0.48f, 0.52f);
+        cs.beginText();
+        cs.setFont(regular, 8.5f);
+        cs.newLineAtOffset(MARGIN, 11f);
+        cs.showText(pdfSafe("Civic Platform — confidential structured metrics export — page 1"));
+        cs.endText();
     }
 
     private static String nz(Long n) {
         return n != null ? String.valueOf(n) : "0";
     }
 
-    private static String formatMoney(BigDecimal amount) {
+    private static String formatMoneyTnd(BigDecimal amount) {
         if (amount == null) {
-            return "$0.00";
+            return "0.00 TND";
         }
-        return "$" + amount.setScale(2, java.math.RoundingMode.HALF_UP).toPlainString();
+        return amount.setScale(2, java.math.RoundingMode.HALF_UP).toPlainString() + " TND";
     }
 
     /**

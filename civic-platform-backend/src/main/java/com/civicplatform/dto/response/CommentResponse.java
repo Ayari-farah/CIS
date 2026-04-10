@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 @Builder
@@ -20,4 +21,5 @@ public class CommentResponse {
     private String authorName;
     private String authorEmail;
     private Long postId;
+    private List<MediaAttachmentDto> attachments;
 }

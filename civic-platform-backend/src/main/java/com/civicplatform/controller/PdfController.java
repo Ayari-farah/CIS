@@ -72,7 +72,7 @@ public class PdfController {
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_PDF);
-        headers.setContentDispositionFormData("attachment", "metrics-report.pdf");
+        headers.setContentDispositionFormData("attachment", "civic-platform-metrics.pdf");
         headers.setContentLength(pdfStream.size());
 
         return ResponseEntity.ok()

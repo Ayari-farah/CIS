@@ -10,6 +10,7 @@ import com.civicplatform.mapper.UserMapper;
 import com.civicplatform.repository.EventParticipantRepository;
 import com.civicplatform.repository.UserRepository;
 import com.civicplatform.service.EmailService;
+import com.civicplatform.service.ProfilePictureStorageService;
 import com.civicplatform.service.UserResponseAssembler;
 import com.civicplatform.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -17,7 +18,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -33,6 +36,7 @@ public class UserServiceImpl implements UserService {
     private final EventParticipantRepository eventParticipantRepository;
     private final EmailService emailService;
     private final PasswordEncoder passwordEncoder;
+    private final ProfilePictureStorageService profilePictureStorageService;
 
     @Override
     @Transactional
@@ -139,9 +143,53 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
+    public UserResponse uploadProfilePicture(Long id, MultipartFile file) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found with id: " + id));
+        if (user.isAdmin()) {
+            throw new IllegalArgumentException("Platform admins do not use participant profile pictures.");
+        }
+        if (file == null || file.isEmpty()) {
+            throw new IllegalArgumentException("Image file is required.");
+        }
+        String contentType = file.getContentType();
+        if (contentType == null) {
+            throw new IllegalArgumentException("Could not determine file type.");
+        }
+        String ext = extensionForImage(contentType.trim().toLowerCase());
+        if (ext == null) {
+            throw new IllegalArgumentException("Only JPEG, PNG, or WebP images are allowed.");
+        }
+        String oldExt = user.getProfilePictureExtension();
+        if (oldExt != null && !oldExt.equalsIgnoreCase(ext)) {
+            profilePictureStorageService.deleteIfExists(user.getId(), oldExt);
+        }
+        try {
+            profilePictureStorageService.store(user.getId(), ext, file);
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to store profile picture.", e);
+        }
+        user.setProfilePictureExtension(ext);
+        user = userRepository.save(user);
+        return userResponseAssembler.toUserResponse(user);
+    }
+
+    private static String extensionForImage(String contentType) {
+        return switch (contentType) {
+            case "image/jpeg", "image/jpg" -> "jpg";
+            case "image/png" -> "png";
+            case "image/webp" -> "webp";
+            default -> null;
+        };
+    }
+
+    @Override
+    @Transactional
     public void deleteUser(Long id) {
-        if (!userRepository.existsById(id)) {
-            throw new RuntimeException("User not found with id: " + id);
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found with id: " + id));
+        if (user.getProfilePictureExtension() != null && !user.getProfilePictureExtension().isBlank()) {
+            profilePictureStorageService.deleteIfExists(id, user.getProfilePictureExtension());
         }
         userRepository.deleteById(id);
     }

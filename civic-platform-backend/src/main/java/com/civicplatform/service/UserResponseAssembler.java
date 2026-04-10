@@ -24,6 +24,7 @@ public class UserResponseAssembler {
                     .admin(true)
                     .userType(null)
                     .createdAt(user.getCreatedAt())
+                    .hasProfilePicture(false)
                     .build();
         }
         UserResponse r = userMapper.toResponse(user);
@@ -44,7 +45,7 @@ public class UserResponseAssembler {
                     .build();
         }
 
-        Badge b = user.getBadge() != null ? user.getBadge() : Badge.NONE;
+        boolean hasPic = user.getProfilePictureExtension() != null && !user.getProfilePictureExtension().isBlank();
         return AuthResponse.builder()
                 .token(accessToken)
                 .refreshToken(refreshToken)
@@ -67,6 +68,7 @@ public class UserResponseAssembler {
                 .contactEmail(user.getContactEmail())
                 .birthDate(user.getBirthDate())
                 .badgeProgress(computeProgress(user))
+                .hasProfilePicture(hasPic)
                 .build();
     }
 

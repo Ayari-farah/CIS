@@ -2,19 +2,27 @@ package com.civicplatform.controller;
 
 import com.civicplatform.dto.request.CommentRequest;
 import com.civicplatform.dto.response.CommentResponse;
+import com.civicplatform.entity.CommentAttachment;
 import com.civicplatform.entity.User;
+import com.civicplatform.repository.CommentAttachmentRepository;
 import com.civicplatform.repository.UserRepository;
 import com.civicplatform.security.RegularAccountPolicy;
 import com.civicplatform.service.CommentService;
+import com.civicplatform.service.PostMediaStorageService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.io.Resource;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 
 @RestController
@@ -25,15 +33,55 @@ public class CommentController {
 
     private final CommentService commentService;
     private final UserRepository userRepository;
+    private final CommentAttachmentRepository commentAttachmentRepository;
+    private final PostMediaStorageService postMediaStorageService;
 
-    @Operation(summary = "Create a new comment")
-    @PostMapping
+    @Operation(summary = "Create a new comment (JSON body)")
+    @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<CommentResponse> createComment(@Valid @RequestBody CommentRequest commentRequest, Authentication authentication) {
         User user = getUserFromAuthentication(authentication);
         RegularAccountPolicy.requireRegularUser(user);
         Long userId = user.getId();
         CommentResponse response = commentService.createComment(commentRequest, userId);
         return new ResponseEntity<>(response, HttpStatus.CREATED);
+    }
+
+    @Operation(summary = "Create a comment with optional image/video attachments")
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<CommentResponse> createCommentMultipart(
+            @RequestParam(required = false) String content,
+            @RequestParam Long postId,
+            @RequestParam(value = "files", required = false) MultipartFile[] files,
+            Authentication authentication) {
+        User user = getUserFromAuthentication(authentication);
+        RegularAccountPolicy.requireRegularUser(user);
+        List<MultipartFile> list = files == null ? List.of() : Arrays.asList(files);
+        CommentResponse response = commentService.createCommentWithMedia(content, postId, list, user.getId());
+        return new ResponseEntity<>(response, HttpStatus.CREATED);
+    }
+
+    @Operation(summary = "Download a comment media attachment")
+    @GetMapping("/{commentId}/attachments/{attachmentId}")
+    public ResponseEntity<Resource> getCommentAttachment(
+            @PathVariable Long commentId,
+            @PathVariable Long attachmentId) {
+        CommentAttachment a = commentAttachmentRepository.findById(attachmentId)
+                .orElseThrow(() -> new RuntimeException("Attachment not found"));
+        if (!a.getComment().getId().equals(commentId)) {
+            return ResponseEntity.notFound().build();
+        }
+        try {
+            Resource resource = postMediaStorageService.loadCommentResource(commentId, a.getFilename());
+            if (resource == null || !resource.exists() || !resource.isReadable()) {
+                return ResponseEntity.notFound().build();
+            }
+            MediaType mt = a.getMimeType() != null
+                    ? MediaType.parseMediaType(a.getMimeType())
+                    : MediaType.APPLICATION_OCTET_STREAM;
+            return ResponseEntity.ok().contentType(mt).body(resource);
+        } catch (IOException e) {
+            return ResponseEntity.notFound().build();
+        }
     }
 
     @Operation(summary = "Get comment by ID")
