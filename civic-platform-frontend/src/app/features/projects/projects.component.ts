@@ -7,6 +7,8 @@ import { catchError, map } from 'rxjs/operators';
 import { ProjectsService, Project } from '@core/services/projects.service';
 import { AuthService } from '@core/services/auth.service';
 import { ProjectVoteStateService } from '@core/services/project-vote-state.service';
+import { RecommendationsService } from '@core/services/recommendations.service';
+import { FeedResponse } from '@core/models/feed.model';
 
 @Component({
   selector: 'app-projects',
@@ -26,6 +28,12 @@ export class ProjectsComponent implements OnInit, OnDestroy {
   /** True while GET has-voted calls are in flight for the list. */
   voteFlagsLoading = false;
 
+  /**
+   * Project ids returned by `/recommendations/feed` (ML order). Used only for badges on the main grid.
+   * Empty when cold start, no model, or ML returned no project list.
+   */
+  private recommendedIdSet = new Set<number>();
+
   readonly statuses = ['SUBMITTED', 'FULLY_FUNDED', 'COMPLETED'];
 
   private voteSub?: Subscription;
@@ -34,6 +42,7 @@ export class ProjectsComponent implements OnInit, OnDestroy {
     public readonly voteState: ProjectVoteStateService,
     private projectsService: ProjectsService,
     private authService: AuthService,
+    private recommendationsService: RecommendationsService,
     private cd: ChangeDetectorRef,
     private router: Router
   ) {}
@@ -49,6 +58,47 @@ export class ProjectsComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.voteSub = this.voteState.changes.subscribe(() => this.cd.markForCheck());
     this.loadProjects();
+    this.loadMlRecommendations();
+  }
+
+  /** Same rules as backend `/recommendations/feed` (not admin, not donor). */
+  canSeeMlRecommendations(): boolean {
+    if (this.isAdminRoute()) {
+      return false;
+    }
+    if (this.authService.isAdmin()) {
+      return false;
+    }
+    if (this.authService.isDonor()) {
+      return false;
+    }
+    return true;
+  }
+
+  private loadMlRecommendations(): void {
+    if (!this.canSeeMlRecommendations()) {
+      return;
+    }
+    this.recommendationsService
+      .getFeed()
+      .pipe(catchError(() => of(null)))
+      .subscribe({
+        next: (feed: FeedResponse | null) => {
+          const ids = feed?.projects?.map((p) => p.id) ?? [];
+          this.recommendedIdSet = new Set(ids);
+          this.loadVoteFlags();
+          this.cd.markForCheck();
+        },
+        error: () => {
+          this.recommendedIdSet = new Set();
+          this.cd.markForCheck();
+        }
+      });
+  }
+
+  /** True when ML feed listed this project as recommended (same list as Dashboard). */
+  isRecommended(project: Project): boolean {
+    return this.recommendedIdSet.has(project.id);
   }
 
   ngOnDestroy(): void {
@@ -120,7 +170,12 @@ export class ProjectsComponent implements OnInit, OnDestroy {
     if (!this.authService.isLoggedIn()) {
       return;
     }
-    const ids = this.allProjects.map((p) => p.id);
+    const ids = [
+      ...new Set([
+        ...this.allProjects.map((p) => p.id),
+        ...Array.from(this.recommendedIdSet)
+      ])
+    ];
     if (ids.length === 0) {
       return;
     }

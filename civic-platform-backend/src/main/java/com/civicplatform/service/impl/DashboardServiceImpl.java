@@ -3,7 +3,9 @@ package com.civicplatform.service.impl;
 import com.civicplatform.dto.response.DashboardStatsResponse;
 import com.civicplatform.enums.CampaignStatus;
 import com.civicplatform.enums.UserType;
+import com.civicplatform.entity.ImpactMetrics;
 import com.civicplatform.repository.CampaignRepository;
+import com.civicplatform.repository.EventRepository;
 import com.civicplatform.repository.ImpactMetricsRepository;
 import com.civicplatform.repository.ProjectFundingRepository;
 import com.civicplatform.repository.ProjectRepository;
@@ -14,9 +16,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -26,6 +28,7 @@ public class DashboardServiceImpl implements DashboardService {
     private final CampaignRepository campaignRepository;
     private final ProjectRepository projectRepository;
     private final ProjectFundingRepository projectFundingRepository;
+    private final EventRepository eventRepository;
     private final ImpactMetricsRepository impactMetricsRepository;
     private final MlServiceClient mlServiceClient;
 
@@ -52,19 +55,24 @@ public class DashboardServiceImpl implements DashboardService {
             totalFundingAmount = BigDecimal.ZERO;
         }
 
-        // Impact metrics (get latest)
-        impactMetricsRepository.findMetricsSince(LocalDate.now().minusDays(30))
-                .stream()
-                .findFirst()
-                .ifPresent(metrics -> {
-                    // Use the latest metrics
-                });
+        Long totalEvents = eventRepository.count();
 
-        // Placeholder values for now - in real implementation, these would be calculated
-        BigDecimal totalCo2Saved = BigDecimal.valueOf(1000.5);
-        Integer totalMealsDistributed = 500;
-        String mostActiveRegion = "Paris";
-        Long totalEvents = 50L;
+        BigDecimal totalCo2Saved = BigDecimal.ZERO;
+        Integer totalMealsDistributed = 0;
+        String mostActiveRegion = null;
+        Optional<ImpactMetrics> latestImpact = impactMetricsRepository.findFirstByOrderByMetricDateDesc();
+        if (latestImpact.isPresent()) {
+            ImpactMetrics im = latestImpact.get();
+            if (im.getTotalCo2SavedKg() != null) {
+                totalCo2Saved = im.getTotalCo2SavedKg();
+            }
+            if (im.getTotalMealsEquivalent() != null) {
+                totalMealsDistributed = im.getTotalMealsEquivalent();
+            }
+            if (im.getRegion() != null && !im.getRegion().isBlank()) {
+                mostActiveRegion = im.getRegion().trim();
+            }
+        }
         Long activeVolunteers = userRepository.countByUserType(UserType.PARTICIPANT);
         Long activeDonors = userRepository.countByUserType(UserType.DONOR);
         Long activeAssociations = userRepository.countByUserType(UserType.DONOR);

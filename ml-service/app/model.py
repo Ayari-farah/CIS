@@ -8,8 +8,21 @@ from surprise import SVD, Dataset, Reader
 from typing import List
 
 logger = logging.getLogger(__name__)
-MODEL_PATH = os.getenv("MODEL_PATH", "/app/models/svd_model.pkl")
 MIN_INTERACTIONS_FOR_SVD = 10  # below this → use popularity only
+
+# SVD hyperparameters (regularization via SVD_REG_ALL; increase if unstable / overfitting)
+SVD_N_FACTORS = int(os.getenv("SVD_N_FACTORS", "50"))
+SVD_N_EPOCHS = int(os.getenv("SVD_N_EPOCHS", "20"))
+SVD_LR_ALL = float(os.getenv("SVD_LR_ALL", "0.005"))
+SVD_REG_ALL = float(os.getenv("SVD_REG_ALL", "0.02"))
+# Clip Surprise raw estimates before blending (rating_scale is 1–5; estimates can drift)
+SVD_EST_CLIP_LO = float(os.getenv("SVD_EST_CLIP_LO", "0.5"))
+SVD_EST_CLIP_HI = float(os.getenv("SVD_EST_CLIP_HI", "5.5"))
+MAX_RECOMMEND_ITEMS = int(os.getenv("MAX_RECOMMEND_ITEMS", "50"))
+
+
+def get_model_path() -> str:
+    return os.getenv("MODEL_PATH", "/app/models/svd_model.pkl")
 
 
 def _item_key(entity_type: str, entity_id: int) -> str:
@@ -26,7 +39,12 @@ class RecommendationModel:
         self.all_project_ids = []
         self.all_post_ids = []
 
-    def train(self, interactions_df: pd.DataFrame) -> dict:
+    def _clip_limit(self, limit: int, default: int) -> int:
+        if limit < 1:
+            return default
+        return min(limit, MAX_RECOMMEND_ITEMS)
+
+    def train(self, interactions_df: pd.DataFrame, model_path: str | None = None) -> dict:
         """
         Train SVD model on user-item interaction matrix.
         Each (user_id, entity_type, entity_id) pair gets a rating = sum of weights.
@@ -63,10 +81,10 @@ class RecommendationModel:
         trainset = dataset.build_full_trainset()
 
         self.svd_model = SVD(
-            n_factors=50,
-            n_epochs=20,
-            lr_all=0.005,
-            reg_all=0.02,
+            n_factors=SVD_N_FACTORS,
+            n_epochs=SVD_N_EPOCHS,
+            lr_all=SVD_LR_ALL,
+            reg_all=SVD_REG_ALL,
             random_state=42,
         )
         self.svd_model.fit(trainset)
@@ -78,7 +96,8 @@ class RecommendationModel:
             "trained_at": datetime.now().isoformat(),
             "n_samples": len(ratings_df),
         }
-        joblib.dump(model_data, MODEL_PATH)
+        path = model_path or get_model_path()
+        joblib.dump(model_data, path)
         self.is_loaded = True
 
         logger.info(
@@ -92,13 +111,14 @@ class RecommendationModel:
             "n_samples": len(ratings_df),
         }
 
-    def load(self) -> bool:
+    def load(self, model_path: str | None = None) -> bool:
         """Load saved model from disk."""
-        if not os.path.exists(MODEL_PATH):
+        path = model_path or get_model_path()
+        if not os.path.exists(path):
             logger.warning("No saved model found.")
             return False
         try:
-            model_data = joblib.load(MODEL_PATH)
+            model_data = joblib.load(path)
             self.svd_model = model_data["svd"]
             self.model_version = model_data["version"]
             self.is_loaded = True
@@ -115,7 +135,8 @@ class RecommendationModel:
         key = _item_key(entity_type, entity_id)
         try:
             prediction = self.svd_model.predict(user_id, key)
-            return float(prediction.est)
+            est = float(prediction.est)
+            return max(SVD_EST_CLIP_LO, min(SVD_EST_CLIP_HI, est))
         except Exception:
             return 0.0
 
@@ -130,6 +151,8 @@ class RecommendationModel:
 
         if campaigns_df.empty:
             return []
+
+        limit = self._clip_limit(limit, 5)
 
         already_voted = set(
             user_votes_df[user_votes_df["user_id"] == user_id]["campaign_id"]
@@ -160,7 +183,10 @@ class RecommendationModel:
             scores.append((cid, score))
 
         scores.sort(key=lambda x: x[1], reverse=True)
-        return [cid for cid, _ in scores[:limit]]
+        out = [cid for cid, _ in scores[:limit]]
+        # Deduplicate while preserving order
+        seen: set = set()
+        return [x for x in out if not (x in seen or seen.add(x))]
 
     def recommend_projects(
         self,
@@ -173,6 +199,8 @@ class RecommendationModel:
 
         if projects_df.empty:
             return []
+
+        limit = self._clip_limit(limit, 5)
 
         already_funded = set(
             user_fundings_df[user_fundings_df["user_id"] == user_id][
@@ -221,7 +249,9 @@ class RecommendationModel:
             scores.append((pid, score))
 
         scores.sort(key=lambda x: x[1], reverse=True)
-        return [pid for pid, _ in scores[:limit]]
+        out = [pid for pid, _ in scores[:limit]]
+        seen: set = set()
+        return [x for x in out if not (x in seen or seen.add(x))]
 
     def recommend_posts(
         self,
@@ -233,6 +263,8 @@ class RecommendationModel:
 
         if posts_df.empty:
             return []
+
+        limit = self._clip_limit(limit, 10)
 
         scores = []
         now = datetime.now()
@@ -258,7 +290,9 @@ class RecommendationModel:
             scores.append((post_id, score))
 
         scores.sort(key=lambda x: x[1], reverse=True)
-        return [pid for pid, _ in scores[:limit]]
+        out = [pid for pid, _ in scores[:limit]]
+        seen: set = set()
+        return [x for x in out if not (x in seen or seen.add(x))]
 
 
 # Singleton instance

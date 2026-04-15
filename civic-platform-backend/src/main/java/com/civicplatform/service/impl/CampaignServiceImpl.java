@@ -8,11 +8,13 @@ import com.civicplatform.entity.User;
 import com.civicplatform.enums.CampaignStatus;
 import com.civicplatform.enums.InteractionAction;
 import com.civicplatform.enums.InteractionEntityType;
+import com.civicplatform.enums.NotificationType;
 import com.civicplatform.mapper.CampaignMapper;
 import com.civicplatform.repository.CampaignRepository;
 import com.civicplatform.repository.CampaignVoteRepository;
 import com.civicplatform.repository.UserRepository;
 import com.civicplatform.service.CampaignService;
+import com.civicplatform.service.NotificationService;
 import com.civicplatform.service.UserInteractionService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -32,6 +34,7 @@ public class CampaignServiceImpl implements CampaignService {
     private final CampaignVoteRepository campaignVoteRepository;
     private final CampaignMapper campaignMapper;
     private final UserInteractionService userInteractionService;
+    private final NotificationService notificationService;
 
     @Override
     @Transactional
@@ -167,12 +170,32 @@ public class CampaignServiceImpl implements CampaignService {
 
         userInteractionService.record(userId, InteractionEntityType.CAMPAIGN, campaignId, InteractionAction.VOTE);
 
+        if (campaign.getCreatedBy() != null) {
+            notificationService.notifyUnlessSameUser(
+                    campaign.getCreatedBy().getId(),
+                    userId,
+                    NotificationType.ENGAGEMENT,
+                    "New vote on your campaign",
+                    user.getUserName() + " voted on \"" + campaign.getName() + "\".",
+                    "/campaigns/" + campaignId);
+        }
+
         // Check if campaign reached 100 votes
         long voteCount = campaignVoteRepository.countByCampaignId(campaignId);
         if (voteCount >= 100) {
+            boolean wasDraft = campaign.getStatus() == CampaignStatus.DRAFT;
             campaign.launch();
             campaignRepository.save(campaign);
             log.info("Campaign {} has been automatically activated after reaching 100 votes", campaignId);
+            if (wasDraft && campaign.getCreatedBy() != null) {
+                notificationService.notifyUnlessSameUser(
+                        campaign.getCreatedBy().getId(),
+                        userId,
+                        NotificationType.SUCCESS,
+                        "Campaign is now active",
+                        "\"" + campaign.getName() + "\" reached enough votes and is live.",
+                        "/campaigns/" + campaignId);
+            }
         }
     }
 
@@ -190,6 +213,15 @@ public class CampaignServiceImpl implements CampaignService {
             campaign.launch();
             campaignRepository.save(campaign);
             log.info("Campaign {} has been automatically activated", campaign.getId());
+            if (campaign.getCreatedBy() != null) {
+                notificationService.notifyUnlessSameUser(
+                        campaign.getCreatedBy().getId(),
+                        null,
+                        NotificationType.SUCCESS,
+                        "Campaign is now active",
+                        "\"" + campaign.getName() + "\" reached enough votes and is live.",
+                        "/campaigns/" + campaign.getId());
+            }
         }
     }
 }

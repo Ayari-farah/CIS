@@ -24,4 +24,7 @@ public interface ImpactMetricsRepository extends JpaRepository<ImpactMetrics, Lo
     
     @Query("SELECT SUM(im.totalMealsEquivalent) FROM ImpactMetrics im WHERE im.metricDate >= :startDate")
     Integer sumTotalMealsSince(LocalDate startDate);
+
+    /** Latest daily snapshot (for dashboard KPIs). */
+    Optional<ImpactMetrics> findFirstByOrderByMetricDateDesc();
 }

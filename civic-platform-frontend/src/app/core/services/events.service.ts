@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../../environments/environment';
 
 export enum EventType {
   VISITE = 'VISITE',
@@ -63,7 +64,7 @@ export interface EventRequest {
 
 @Injectable({ providedIn: 'root' })
 export class EventsService {
-  private readonly API_URL = 'http://localhost:8081/api/events';
+  private readonly API_URL = `${environment.apiUrl}/events`;
 
   constructor(private http: HttpClient) {}
 

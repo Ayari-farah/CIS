@@ -1,0 +1,64 @@
+<div class="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-emerald-50 py-8 px-4 sm:px-6 lg:px-8">
+  <div class="max-w-3xl mx-auto">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+      <div>
+        <h1 class="text-2xl font-bold text-gray-900">Notifications</h1>
+        <p class="text-sm text-gray-600 mt-1">Alerts about votes, comments, moderation, and funding.</p>
+      </div>
+      <button
+        type="button"
+        (click)="markAllRead()"
+        class="text-sm font-medium text-emerald-700 hover:text-emerald-900 self-start"
+      >
+        Mark all as read
+      </button>
+    </div>
+
+    <div *ngIf="loading" class="text-center py-16 text-gray-500">Loading…</div>
+
+    <ul *ngIf="!loading" class="space-y-2">
+      <li *ngIf="items.length === 0" class="text-center py-16 text-gray-500 bg-white rounded-xl border border-gray-100 shadow-sm">
+        No notifications yet.
+      </li>
+      <li *ngFor="let n of items">
+        <button
+          type="button"
+          (click)="open(n)"
+          class="w-full text-left rounded-xl border border-gray-100 bg-white/90 backdrop-blur-sm p-4 shadow-sm hover:border-emerald-200 hover:shadow transition-all flex gap-3"
+          [class.ring-2]="!n.readAt"
+          [class.ring-emerald-200]="!n.readAt"
+        >
+          <span
+            class="mt-1.5 h-2 w-2 rounded-full shrink-0"
+            [ngClass]="{ 'bg-emerald-500': !n.readAt, 'bg-gray-300': n.readAt }"
+          ></span>
+          <div class="min-w-0 flex-1">
+            <p class="font-semibold text-gray-900">{{ n.title }}</p>
+            <p *ngIf="n.body" class="text-sm text-gray-600 mt-1">{{ n.body }}</p>
+            <p class="text-xs text-gray-400 mt-2">{{ n.createdAt | date: 'medium' }}</p>
+          </div>
+        </button>
+      </li>
+    </ul>
+
+    <div *ngIf="!loading && totalPages > 1" class="flex justify-center gap-4 mt-8">
+      <button
+        type="button"
+        (click)="prev()"
+        [disabled]="page <= 0"
+        class="px-4 py-2 rounded-lg border border-gray-200 text-sm font-medium disabled:opacity-40"
+      >
+        Previous
+      </button>
+      <span class="text-sm text-gray-600 self-center">Page {{ page + 1 }} / {{ totalPages }}</span>
+      <button
+        type="button"
+        (click)="next()"
+        [disabled]="page >= totalPages - 1"
+        class="px-4 py-2 rounded-lg border border-gray-200 text-sm font-medium disabled:opacity-40"
+      >
+        Next
+      </button>
+    </div>
+  </div>
+</div>

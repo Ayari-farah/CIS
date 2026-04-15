@@ -14,7 +14,9 @@ import com.civicplatform.repository.PostRepository;
 import com.civicplatform.repository.UserRepository;
 import com.civicplatform.enums.InteractionAction;
 import com.civicplatform.enums.InteractionEntityType;
+import com.civicplatform.enums.NotificationType;
 import com.civicplatform.service.CommentService;
+import com.civicplatform.service.NotificationService;
 import com.civicplatform.service.UserInteractionService;
 import com.civicplatform.service.PostMediaStorageService;
 import lombok.RequiredArgsConstructor;
@@ -41,6 +43,7 @@ public class CommentServiceImpl implements CommentService {
     private final CommentAttachmentRepository commentAttachmentRepository;
     private final PostMediaStorageService postMediaStorageService;
     private final UserInteractionService userInteractionService;
+    private final NotificationService notificationService;
 
     @Override
     @Transactional
@@ -57,6 +60,13 @@ public class CommentServiceImpl implements CommentService {
 
         comment = commentRepository.save(comment);
         userInteractionService.record(authorId, InteractionEntityType.POST, post.getId(), InteractionAction.COMMENT);
+        notificationService.notifyByUserNameUnless(
+                post.getCreator(),
+                authorId,
+                NotificationType.INFO,
+                "New comment on your post",
+                author.getUserName() + " commented on your post.",
+                "/posts/" + post.getId());
         CommentResponse r = commentMapper.toResponse(comment);
         r.setAttachments(List.of());
         return r;
@@ -86,6 +96,13 @@ public class CommentServiceImpl implements CommentService {
                 .build();
         comment = commentRepository.save(comment);
         userInteractionService.record(authorId, InteractionEntityType.POST, postId, InteractionAction.COMMENT);
+        notificationService.notifyByUserNameUnless(
+                post.getCreator(),
+                authorId,
+                NotificationType.INFO,
+                "New comment on your post",
+                author.getUserName() + " commented on your post.",
+                "/posts/" + postId);
 
         for (MultipartFile file : fileList) {
             if (file == null || file.isEmpty()) {

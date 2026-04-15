@@ -11,6 +11,9 @@ import {
   CampaignType
 } from '@core/services/campaigns.service';
 import { AuthService } from '@core/services/auth.service';
+import { RecommendationsService } from '@core/services/recommendations.service';
+import { FeedResponse } from '@core/models/feed.model';
+import { isMeaningfulModelVersion } from '@core/utils/ml-display';
 
 @Component({
   selector: 'app-campaigns',
@@ -29,6 +32,12 @@ export class CampaignsComponent implements OnInit {
   hasVotedMap: Record<number, boolean> = {};
   votingId: number | null = null;
 
+  recommendedCampaigns: Campaign[] = [];
+  mlFeedLoading = false;
+  mlFeedMeta: { modelVersion?: string; coldStart?: boolean } | null = null;
+
+  readonly isMeaningfulModelVersion = isMeaningfulModelVersion;
+
   readonly statuses: CampaignStatus[] = [
     CampaignStatus.DRAFT,
     CampaignStatus.ACTIVE,
@@ -40,6 +49,7 @@ export class CampaignsComponent implements OnInit {
   constructor(
     private campaignsService: CampaignsService,
     private authService: AuthService,
+    private recommendationsService: RecommendationsService,
     private router: Router
   ) {}
 
@@ -70,6 +80,54 @@ export class CampaignsComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadCampaigns();
+    this.loadMlRecommendations();
+  }
+
+  canSeeMlRecommendations(): boolean {
+    if (this.isAdminRoute()) {
+      return false;
+    }
+    if (this.authService.isAdmin()) {
+      return false;
+    }
+    if (this.authService.isDonor()) {
+      return false;
+    }
+    return true;
+  }
+
+  private loadMlRecommendations(): void {
+    if (!this.canSeeMlRecommendations()) {
+      return;
+    }
+    this.mlFeedLoading = true;
+    this.recommendationsService
+      .getFeed()
+      .pipe(catchError(() => of(null)))
+      .subscribe({
+        next: (feed: FeedResponse | null) => {
+          this.mlFeedLoading = false;
+          if (feed?.campaigns?.length) {
+            this.recommendedCampaigns = feed.campaigns;
+            this.mlFeedMeta = {
+              modelVersion: feed.modelVersion,
+              coldStart: feed.coldStart
+            };
+            this.loadVoteFlags();
+          } else {
+            this.recommendedCampaigns = [];
+            this.mlFeedMeta = feed
+              ? {
+                  modelVersion: feed.modelVersion,
+                  coldStart: feed.coldStart
+                }
+              : null;
+          }
+        },
+        error: () => {
+          this.mlFeedLoading = false;
+        }
+      });
   }
 
   get filteredCampaigns(): Campaign[] {
@@ -111,7 +169,12 @@ export class CampaignsComponent implements OnInit {
     if (!this.authService.isLoggedIn() || this.authService.isAdmin()) {
       return;
     }
-    const ids = this.allCampaigns.map((c) => c.id);
+    const ids = [
+      ...new Set([
+        ...this.allCampaigns.map((c) => c.id),
+        ...this.recommendedCampaigns.map((c) => c.id)
+      ])
+    ];
     if (ids.length === 0) {
       return;
     }

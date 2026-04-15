@@ -14,7 +14,7 @@ from app.data import (
     load_user_fundings,
     load_user_votes,
 )
-from app.model import recommendation_model
+from app.model import get_model_path, recommendation_model
 from app.schemas import (
     HealthResponse,
     RecommendRequest,
@@ -41,6 +41,12 @@ def scheduled_retrain():
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # Set ML_SKIP_LIFESPAN=1 for pytest / API tests (no DB, no scheduler)
+    if os.getenv("ML_SKIP_LIFESPAN") == "1":
+        logger.info("ML Service starting up (lifespan skipped for tests).")
+        yield
+        return
+
     logger.info("ML Service starting up...")
     loaded = recommendation_model.load()
     if not loaded:
@@ -165,5 +171,5 @@ def model_info():
     return {
         "version": recommendation_model.model_version,
         "is_loaded": recommendation_model.is_loaded,
-        "model_path": os.getenv("MODEL_PATH", "/app/models/svd_model.pkl"),
+        "model_path": get_model_path(),
     }

@@ -9,8 +9,9 @@ services:
       MYSQL_DATABASE: civic_platform
       MYSQL_USER: civic_user
       MYSQL_PASSWORD: civic_password
+    # Use 3307 on host if local MariaDB/MySQL already uses 3306
     ports:
-      - "3306:3306"
+      - "3307:3306"
     volumes:
       - mariadb_data:/var/lib/mysql
     healthcheck:
@@ -25,7 +26,7 @@ services:
       dockerfile: Dockerfile
     container_name: civic-backend
     restart: always
-    # Host 8081 matches civic-platform-frontend environment.ts (apiUrl .../8081/api)
+    # Host 8081: direct API access. Local `mvn` uses 8082 by default (see application.yml).
     ports:
       - "8081:8080"
     environment:
@@ -40,6 +41,8 @@ services:
       SPRING_MAIL_USERNAME: ${SPRING_MAIL_USERNAME:-your@email.com}
       SPRING_MAIL_PASSWORD: ${SPRING_MAIL_PASSWORD:-your_app_password}
       DB_PASSWORD: civic_password
+      # Placeholder mail creds would make actuator health DOWN; exclude mail from readiness
+      MANAGEMENT_HEALTH_MAIL_ENABLED: "false"
     depends_on:
       mariadb:
         condition: service_healthy
@@ -48,6 +51,18 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+
+  frontend:
+    build:
+      context: ./civic-platform-frontend
+      dockerfile: Dockerfile
+    container_name: civic-frontend
+    restart: always
+    ports:
+      - "4200:80"
+    depends_on:
+      backend:
+        condition: service_healthy
 
   ml-service:
     build:

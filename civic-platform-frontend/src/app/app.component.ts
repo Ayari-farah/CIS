@@ -6,13 +6,14 @@ import { AuthService } from './core/services/auth.service';
 import { UsersService } from './core/services/users.service';
 import { User } from './core/models/auth.models';
 import { BadgeComponent } from './shared/components/badge/badge.component';
+import { NotificationBellComponent } from './shared/components/notification-bell/notification-bell.component';
 import { ImageZoomViewerComponent } from './shared/components/image-zoom-viewer/image-zoom-viewer.component';
 import { ImageViewerService } from './core/services/image-viewer.service';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, RouterModule, BadgeComponent, ImageZoomViewerComponent],
+  imports: [CommonModule, RouterModule, BadgeComponent, NotificationBellComponent, ImageZoomViewerComponent],
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.scss']
 })

@@ -1,15 +1,17 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict, Field
 from typing import List, Optional
 
 
 class RecommendRequest(BaseModel):
-    user_id: int
-    limit_campaigns: Optional[int] = 5
-    limit_projects: Optional[int] = 5
-    limit_posts: Optional[int] = 10
+    user_id: int = Field(..., ge=1, description="Platform user id")
+    limit_campaigns: Optional[int] = Field(default=5, ge=1, le=50)
+    limit_projects: Optional[int] = Field(default=5, ge=1, le=50)
+    limit_posts: Optional[int] = Field(default=10, ge=1, le=50)
 
 
 class RecommendResponse(BaseModel):
+    model_config = ConfigDict(protected_namespaces=())
+
     user_id: int
     recommended_campaign_ids: List[int]
     recommended_project_ids: List[int]
@@ -19,6 +21,8 @@ class RecommendResponse(BaseModel):
 
 
 class HealthResponse(BaseModel):
+    model_config = ConfigDict(protected_namespaces=())
+
     status: str
     model_loaded: bool
     model_version: str

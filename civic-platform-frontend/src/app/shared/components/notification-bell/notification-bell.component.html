@@ -1,0 +1,81 @@
+<div class="relative" data-notification-bell-root>
+  <button
+    type="button"
+    (click)="toggle(); $event.stopPropagation()"
+    [attr.aria-expanded]="open"
+    aria-label="Notifications"
+    [class]="
+      variant === 'dark'
+        ? 'relative p-2 rounded-lg text-slate-200 hover:bg-slate-700/80 transition-colors'
+        : 'relative p-2 rounded-lg text-white hover:bg-emerald-700/80 transition-colors'
+    "
+  >
+    <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-width="2"
+        d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
+      />
+    </svg>
+    <span
+      *ngIf="unread > 0"
+      class="absolute top-0.5 right-0.5 min-w-[1.125rem] h-[1.125rem] px-0.5 rounded-full bg-amber-400 text-[0.65rem] font-bold text-emerald-900 flex items-center justify-center ring-2 ring-white/20"
+      >{{ unread > 99 ? '99+' : unread }}</span
+    >
+  </button>
+
+  <div
+    *ngIf="open"
+    class="absolute right-0 z-[80] mt-2 w-[min(22rem,calc(100vw-2rem))] rounded-xl shadow-xl border border-gray-200 bg-white text-slate-900 overflow-hidden"
+    (click)="$event.stopPropagation()"
+  >
+    <div class="flex items-center justify-between px-3 py-2 border-b border-gray-100 bg-gray-50">
+      <span class="text-sm font-semibold text-gray-900">Notifications</span>
+      <button
+        *ngIf="unread > 0"
+        type="button"
+        (click)="markAllRead()"
+        class="text-xs font-medium text-emerald-700 hover:text-emerald-900"
+      >
+        Mark all read
+      </button>
+    </div>
+    <div class="max-h-80 overflow-y-auto">
+      <div *ngIf="loading" class="px-4 py-6 text-sm text-gray-500 text-center">Loading…</div>
+      <p *ngIf="!loading && items.length === 0" class="px-4 py-6 text-sm text-gray-500 text-center">
+        No notifications yet.
+      </p>
+      <button
+        type="button"
+        *ngFor="let n of items"
+        (click)="onItemClick(n)"
+        class="w-full text-left px-3 py-2.5 border-b border-gray-50 hover:bg-emerald-50/80 transition-colors flex gap-2"
+        [ngClass]="{ 'bg-emerald-50/50': !n.readAt }"
+      >
+        <span
+          class="mt-0.5 h-2 w-2 rounded-full shrink-0"
+          [ngClass]="{
+            'bg-emerald-500': !n.readAt,
+            'bg-gray-300': n.readAt
+          }"
+          aria-hidden="true"
+        ></span>
+        <span class="min-w-0 flex-1">
+          <span class="block text-sm font-medium text-gray-900 line-clamp-2">{{ n.title }}</span>
+          <span *ngIf="n.body" class="block text-xs text-gray-600 line-clamp-2 mt-0.5">{{ n.body }}</span>
+          <span class="block text-[0.65rem] text-gray-400 mt-1">{{ n.createdAt | date: 'short' }}</span>
+        </span>
+      </button>
+    </div>
+    <div class="border-t border-gray-100 px-2 py-2 bg-gray-50">
+      <button
+        type="button"
+        (click)="goToFullPage()"
+        class="w-full text-center text-sm font-medium text-emerald-700 hover:text-emerald-900 py-1"
+      >
+        View all
+      </button>
+    </div>
+  </div>
+</div>

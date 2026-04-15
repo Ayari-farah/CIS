@@ -17,6 +17,8 @@ import com.civicplatform.repository.ProjectVoteRepository;
 import com.civicplatform.repository.UserRepository;
 import com.civicplatform.enums.InteractionAction;
 import com.civicplatform.enums.InteractionEntityType;
+import com.civicplatform.enums.NotificationType;
+import com.civicplatform.service.NotificationService;
 import com.civicplatform.service.ProjectService;
 import com.civicplatform.service.UserInteractionService;
 import lombok.RequiredArgsConstructor;
@@ -39,6 +41,7 @@ public class ProjectServiceImpl implements ProjectService {
     private final ProjectMapper projectMapper;
     private final ProjectFundingMapper projectFundingMapper;
     private final UserInteractionService userInteractionService;
+    private final NotificationService notificationService;
 
     @Override
     @Transactional
@@ -106,7 +109,7 @@ public class ProjectServiceImpl implements ProjectService {
     @Override
     @Transactional
     public void voteForProject(Long projectId, Long userId) {
-        userRepository.findById(userId)
+        User voter = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
 
         Project project = projectRepository.findById(projectId)
@@ -128,6 +131,16 @@ public class ProjectServiceImpl implements ProjectService {
         projectRepository.save(project);
 
         userInteractionService.record(userId, InteractionEntityType.PROJECT, projectId, InteractionAction.VOTE);
+
+        if (project.getCreatedBy() != null) {
+            notificationService.notifyUnlessSameUser(
+                    project.getCreatedBy().getId(),
+                    userId,
+                    NotificationType.ENGAGEMENT,
+                    "New vote on your project",
+                    voter.getUserName() + " voted on \"" + project.getTitle() + "\".",
+                    "/projects/" + projectId);
+        }
     }
 
     @Override
@@ -169,6 +182,16 @@ public class ProjectServiceImpl implements ProjectService {
         }
 
         userInteractionService.record(userId, InteractionEntityType.PROJECT, project.getId(), InteractionAction.FUND);
+
+        if (project.getCreatedBy() != null) {
+            notificationService.notifyUnlessSameUser(
+                    project.getCreatedBy().getId(),
+                    userId,
+                    NotificationType.ENGAGEMENT,
+                    "New funding on your project",
+                    user.getUserName() + " contributed " + fundingRequest.getAmount() + " to \"" + project.getTitle() + "\".",
+                    "/projects/" + project.getId());
+        }
     }
 
     @Override

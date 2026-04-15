@@ -1,0 +1,4 @@
+# For bulk_seed_test_data.py (install in a venv: pip install -r scripts/requirements-seed.txt)
+pymysql>=1.1
+# Optional: only if you use --password with a value other than the default TestPass123!
+# bcrypt>=4.0

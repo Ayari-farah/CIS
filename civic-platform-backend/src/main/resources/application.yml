@@ -1,7 +1,7 @@
-# If spring-boot:run fails with "Port 8081 was already in use", stop the other process
-# (e.g. ./run-dev.sh) or: fuser -k 8081/tcp
+# Default 8082 avoids clashing with Docker Compose, which maps the backend to host port 8081.
+# Override: SERVER_PORT=8081 mvn spring-boot:run
 server:
-  port: ${SERVER_PORT:8081}
+  port: ${SERVER_PORT:8082}
   servlet:
     context-path: /api
 

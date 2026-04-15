@@ -7,6 +7,7 @@ import com.civicplatform.entity.Campaign;
 import com.civicplatform.entity.Post;
 import com.civicplatform.entity.PostAttachment;
 import com.civicplatform.entity.User;
+import com.civicplatform.enums.NotificationType;
 import com.civicplatform.enums.PostStatus;
 import com.civicplatform.enums.PostType;
 import com.civicplatform.mapper.PostMapper;
@@ -14,6 +15,7 @@ import com.civicplatform.repository.CampaignRepository;
 import com.civicplatform.repository.PostAttachmentRepository;
 import com.civicplatform.repository.PostRepository;
 import com.civicplatform.repository.UserRepository;
+import com.civicplatform.service.NotificationService;
 import com.civicplatform.service.PostMediaStorageService;
 import com.civicplatform.service.PostService;
 import lombok.RequiredArgsConstructor;
@@ -40,6 +42,7 @@ public class PostServiceImpl implements PostService {
     private final PostMapper postMapper;
     private final PostAttachmentRepository postAttachmentRepository;
     private final PostMediaStorageService postMediaStorageService;
+    private final NotificationService notificationService;
 
     @Override
     @Transactional(readOnly = false)
@@ -218,6 +221,13 @@ public class PostServiceImpl implements PostService {
 
         post.setStatus(PostStatus.ACCEPTED);
         post = postRepository.save(post);
+        notificationService.notifyByUserNameUnless(
+                post.getCreator(),
+                null,
+                NotificationType.MODERATION,
+                "Post approved",
+                "Your post was accepted and is visible in the feed.",
+                "/posts/" + post.getId());
         PostResponse r = postMapper.toResponse(post);
         r.setAttachments(toPostAttachmentDtos(post.getId(),
                 postAttachmentRepository.findByPost_IdOrderByIdAsc(post.getId())));
@@ -232,6 +242,13 @@ public class PostServiceImpl implements PostService {
 
         post.setStatus(PostStatus.REJECTED);
         post = postRepository.save(post);
+        notificationService.notifyByUserNameUnless(
+                post.getCreator(),
+                null,
+                NotificationType.WARNING,
+                "Post not approved",
+                "Your post was not approved. You can edit and resubmit from My posts.",
+                "/my-posts");
         PostResponse r = postMapper.toResponse(post);
         r.setAttachments(toPostAttachmentDtos(post.getId(),
                 postAttachmentRepository.findByPost_IdOrderByIdAsc(post.getId())));

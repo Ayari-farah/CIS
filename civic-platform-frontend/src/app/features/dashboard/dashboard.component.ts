@@ -13,6 +13,7 @@ import { PostsService, Post } from '@core/services/posts.service';
 import { User, UserType } from '@core/models/auth.models';
 import { FeedResponse } from '@core/models/feed.model';
 import { RecommendationsService } from '@core/services/recommendations.service';
+import { isMeaningfulModelVersion } from '@core/utils/ml-display';
 
 interface DashboardTab {
   id: string;
@@ -75,6 +76,9 @@ export class DashboardComponent implements OnInit {
   feedPosts: Post[] = [];
   feedModelVersion?: string;
   feedColdStart?: boolean;
+
+  /** Expose for template — hide API placeholders like "none". */
+  readonly isMeaningfulModelVersion = isMeaningfulModelVersion;
 
   // Participation data
   myParticipations: EventParticipation[] = [];

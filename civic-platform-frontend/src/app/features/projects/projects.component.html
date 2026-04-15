@@ -139,10 +139,17 @@
             getHeaderAccentClass(project.status)
           "
         >
-          <span
-            class="text-xs font-semibold uppercase tracking-wide bg-white/15 px-2 py-0.5 rounded-full"
-            >Project</span
-          >
+          <div class="flex flex-wrap items-center gap-2 min-w-0">
+            <span
+              class="text-xs font-semibold uppercase tracking-wide bg-white/15 px-2 py-0.5 rounded-full shrink-0"
+              >Project</span
+            >
+            <span
+              *ngIf="!isAdminRoute() && canSeeMlRecommendations() && isRecommended(project)"
+              class="text-[0.65rem] font-bold uppercase tracking-wide bg-violet-500/95 text-white px-2 py-0.5 rounded-full shrink-0 ring-1 ring-white/30"
+              >Recommended</span
+            >
+          </div>
           <span
             [ngClass]="getStatusPillClass(project.status)"
             class="text-xs font-medium px-2 py-0.5 rounded-full shrink-0"

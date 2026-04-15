@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../../environments/environment';
 
 export enum CampaignType {
   FOOD_COLLECTION = 'FOOD_COLLECTION',
@@ -55,7 +56,7 @@ export interface CampaignRequest {
 
 @Injectable({ providedIn: 'root' })
 export class CampaignsService {
-  private readonly API_URL = 'http://localhost:8081/api/campaigns';
+  private readonly API_URL = `${environment.apiUrl}/campaigns`;
 
   constructor(private http: HttpClient) {}
 
