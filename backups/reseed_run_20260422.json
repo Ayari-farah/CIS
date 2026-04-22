@@ -1,0 +1,16 @@
+{
+  "events": 100,
+  "campaigns": 100,
+  "projects": 100,
+  "posts": 100,
+  "event_participants": 3074,
+  "campaign_votes": 1040,
+  "project_votes": 2055,
+  "project_fundings": 1575,
+  "likes": 1573,
+  "comments": 548,
+  "user_interactions": 9865,
+  "mismatch_post_likes": 0,
+  "mismatch_project_amount": 0,
+  "mismatch_event_participants": 0
+}
