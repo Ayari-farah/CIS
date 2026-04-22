@@ -1,7 +1,7 @@
 services:
   db:
     image: mariadb:latest
-    container_name: teamsync-db-dev
+    container_name: civic-platform-db-dev
     restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: rootpassword
