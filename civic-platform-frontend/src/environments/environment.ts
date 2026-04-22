@@ -18,6 +18,11 @@ export const environment = {
   get apiUrl(): string {
     return resolveApiBaseUrl();
   },
+  keycloak: {
+    url: 'http://localhost:8080',
+    realm: 'cis',
+    clientId: 'civic-frontend'
+  },
   /** Optional: https://developers.giphy.com/dashboard/ — enables GIF search in post/comment composer */
   giphyApiKey: ''
 };

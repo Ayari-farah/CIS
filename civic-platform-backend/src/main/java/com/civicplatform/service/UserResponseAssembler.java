@@ -19,9 +19,12 @@ public class UserResponseAssembler {
         if (user.isAdmin()) {
             return UserResponse.builder()
                     .id(user.getId())
+                    .keycloakId(user.getKeycloakId())
                     .userName(user.getUserName())
                     .email(user.getEmail())
                     .admin(true)
+                    .actif(user.isActif())
+                    .deletionRequested(user.isDeletionRequested())
                     .userType(null)
                     .createdAt(user.getCreatedAt())
                     .hasProfilePicture(false)

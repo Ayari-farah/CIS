@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
@@ -12,7 +12,7 @@ import { RegisterRequest, UserType } from '@core/models/auth.models';
   templateUrl: './register.component.html',
   styleUrls: ['./register.component.scss']
 })
-export class RegisterComponent {
+export class RegisterComponent implements OnInit {
   step: 1 | 2 = 1;
   userType: 'CITIZEN' | 'DONOR' | null = null;
   
@@ -40,6 +40,12 @@ export class RegisterComponent {
       birthDate: [''],
       associationName: ['']
     });
+  }
+
+  ngOnInit(): void {
+    if (this.authService.isLoggedIn()) {
+      this.router.navigateByUrl(this.returnUrl);
+    }
   }
 
   selectUserType(type: 'CITIZEN' | 'DONOR'): void {

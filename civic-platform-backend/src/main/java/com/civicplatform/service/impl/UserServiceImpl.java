@@ -44,6 +44,8 @@ public class UserServiceImpl implements UserService {
         User user = userMapper.toEntity(userRequest);
         user.setPassword(passwordEncoder.encode(userRequest.getPassword()));
         user.setAdmin(false);
+        user.setActif(true);
+        user.setDeletionRequested(false);
         if (user.getBadge() == null) {
             user.setBadge(Badge.NONE);
         }

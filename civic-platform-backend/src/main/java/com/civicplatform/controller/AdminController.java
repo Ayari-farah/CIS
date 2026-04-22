@@ -2,7 +2,7 @@ package com.civicplatform.controller;
 
 import com.civicplatform.dto.response.DashboardStatsResponse;
 import com.civicplatform.entity.User;
-import com.civicplatform.repository.UserRepository;
+import com.civicplatform.security.CurrentUserResolver;
 import com.civicplatform.service.DashboardService;
 import com.civicplatform.service.MlServiceClient;
 import io.swagger.v3.oas.annotations.Operation;
@@ -23,7 +23,7 @@ public class AdminController {
 
     private final DashboardService dashboardService;
     private final MlServiceClient mlServiceClient;
-    private final UserRepository userRepository;
+    private final CurrentUserResolver currentUserResolver;
 
     @Operation(summary = "Get dashboard statistics")
     @GetMapping("/dashboard")
@@ -36,8 +36,7 @@ public class AdminController {
     @PostMapping("/ml/retrain")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Map<String, String>> triggerMlRetrain(Authentication authentication) {
-        User user = userRepository.findByEmail(authentication.getName())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+        User user = currentUserResolver.resolveRequired(authentication);
         if (!user.isAdmin()) {
             return ResponseEntity.status(403).build();
         }

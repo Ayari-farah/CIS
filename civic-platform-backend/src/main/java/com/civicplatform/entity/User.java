@@ -47,6 +47,9 @@ public class User implements UserDetails {
     @Column(nullable = false, unique = true)
     private String email;
 
+    @Column(name = "keycloak_id", unique = true, length = 100)
+    private String keycloakId;
+
     @NotBlank(message = "Password is required")
     @Size(min = 6, message = "Password must be at least 6 characters")
     @Column(nullable = false)
@@ -60,6 +63,14 @@ public class User implements UserDetails {
     @Column(name = "is_admin", nullable = false)
     @Builder.Default
     private boolean admin = false;
+
+    @Column(name = "is_actif", nullable = false)
+    @Builder.Default
+    private boolean actif = true;
+
+    @Column(name = "is_deletion_requested", nullable = false)
+    @Builder.Default
+    private boolean deletionRequested = false;
 
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)

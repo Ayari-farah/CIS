@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
@@ -12,7 +12,7 @@ import { LoginRequest } from '@core/models/auth.models';
   templateUrl: './login.component.html',
   styleUrls: ['./login.component.scss']
 })
-export class LoginComponent {
+export class LoginComponent implements OnInit {
   loginForm: FormGroup;
   isLoading = false;
   errorMessage = '';
@@ -31,6 +31,17 @@ export class LoginComponent {
       email: ['', [Validators.required, Validators.pattern(/^[^\s@]+@[^\s@]+$/)]],
       password: ['', [Validators.required]]
     });
+  }
+
+  ngOnInit(): void {
+    if (this.authService.isLoggedIn()) {
+      if (this.authService.isAdmin()) {
+        this.router.navigateByUrl('/admin/dashboard');
+        return;
+      }
+      const dest = this.returnUrl.startsWith('/admin') ? '/dashboard' : this.returnUrl;
+      this.router.navigateByUrl(dest);
+    }
   }
 
   onSubmit(): void {

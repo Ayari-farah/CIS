@@ -53,6 +53,12 @@ spring:
             
   thymeleaf:
     cache: false
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8080/realms/cis}
     
 # CORS Configuration
 cors:
@@ -83,12 +89,6 @@ ml:
   service:
     url: ${ML_SERVICE_URL:http://localhost:8000}
     timeout-seconds: ${ML_SERVICE_TIMEOUT_SECONDS:10}
-
-# JWT Configuration
-jwt:
-  secret: ${JWT_SECRET:mySecretKey123456789012345678901234567890}
-  access-token-expiration: 900000 # 15 minutes
-  refresh-token-expiration: 604800000 # 7 days
 
 # Logging
 logging:

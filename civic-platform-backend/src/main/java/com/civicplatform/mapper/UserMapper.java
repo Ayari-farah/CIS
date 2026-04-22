@@ -28,6 +28,9 @@ public interface UserMapper {
     @Mapping(target = "campaignVotes", ignore = true)
     @Mapping(target = "refreshTokens", ignore = true)
     @Mapping(target = "admin", ignore = true)
+    @Mapping(target = "actif", ignore = true)
+    @Mapping(target = "deletionRequested", ignore = true)
+    @Mapping(target = "keycloakId", ignore = true)
     @Mapping(target = "profilePictureExtension", ignore = true)
     User toEntity(UserRequest userRequest);
 
@@ -47,6 +50,9 @@ public interface UserMapper {
     @Mapping(target = "badge", ignore = true)
     @Mapping(target = "points", ignore = true)
     @Mapping(target = "admin", ignore = true)
+    @Mapping(target = "actif", ignore = true)
+    @Mapping(target = "deletionRequested", ignore = true)
+    @Mapping(target = "keycloakId", ignore = true)
     @Mapping(target = "profilePictureExtension", ignore = true)
     User toEntityForCreate(UserRequest userRequest);
 

@@ -7,7 +7,7 @@ import com.civicplatform.entity.User;
 import com.civicplatform.enums.PostStatus;
 import com.civicplatform.enums.PostType;
 import com.civicplatform.repository.PostAttachmentRepository;
-import com.civicplatform.repository.UserRepository;
+import com.civicplatform.security.CurrentUserResolver;
 import com.civicplatform.security.RegularAccountPolicy;
 import com.civicplatform.service.PostMediaStorageService;
 import com.civicplatform.service.PostService;
@@ -35,7 +35,7 @@ import java.util.List;
 public class PostController {
 
     private final PostService postService;
-    private final UserRepository userRepository;
+    private final CurrentUserResolver currentUserResolver;
     private final PostAttachmentRepository postAttachmentRepository;
     private final PostMediaStorageService postMediaStorageService;
 
@@ -159,8 +159,7 @@ public class PostController {
     }
 
     private void checkPostOwnership(Long postId, Authentication authentication) {
-        User user = userRepository.findByEmail(authentication.getName())
-                .orElseThrow(() -> new RuntimeException("Authenticated user not found"));
+        User user = currentUserResolver.resolveRequired(authentication);
         RegularAccountPolicy.requireRegularUser(user);
         PostResponse post = postService.getPostById(postId);
         if (!user.getUserName().equals(post.getCreator())) {
@@ -169,8 +168,6 @@ public class PostController {
     }
 
     private User getUserFromAuthentication(Authentication authentication) {
-        String email = authentication.getName();
-        return userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Authenticated user not found"));
+        return currentUserResolver.resolveRequired(authentication);
     }
 }

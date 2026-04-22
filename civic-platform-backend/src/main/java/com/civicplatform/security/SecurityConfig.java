@@ -5,6 +5,8 @@ import org.springframework.http.HttpMethod;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -13,23 +15,23 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
-
-    private final JwtAuthenticationFilter jwtAuthenticationFilter;
-    private final UserDetailsServiceImpl userDetailsService;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -38,7 +40,7 @@ public class SecurityConfig {
             .csrf(AbstractHttpConfigurer::disable)
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/actuator/**", "/api/actuator/**").permitAll()
-                .requestMatchers("/auth/**", "/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
+                .requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
                 .requestMatchers("/admin/reports/**").hasRole("ADMIN")
                 .requestMatchers("/admin/**").hasRole("ADMIN")
                 .requestMatchers("/metrics/**").hasRole("ADMIN")
@@ -52,9 +54,37 @@ public class SecurityConfig {
                 .anyRequest().authenticated()
             )
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+            .oauth2ResourceServer(oauth2 ->
+                    oauth2.jwt(jwt -> jwt.jwtAuthenticationConverter(token -> {
+                        Collection<GrantedAuthority> realmRoles = extractRealmRoles(token);
+                        String principalName = token.getClaimAsString("email");
+                        if (principalName == null || principalName.isBlank()) {
+                            principalName = token.getClaimAsString("preferred_username");
+                        }
+                        if (principalName == null || principalName.isBlank()) {
+                            principalName = token.getSubject();
+                        }
+                        return new JwtAuthenticationToken(token, realmRoles, principalName);
+                    })));
 
         return http.build();
+    }
+
+    private Collection<GrantedAuthority> extractRealmRoles(Jwt jwt) {
+        Object realmAccess = jwt.getClaim("realm_access");
+        if (!(realmAccess instanceof Map<?, ?> map)) {
+            return List.of();
+        }
+        Object roles = map.get("roles");
+        if (!(roles instanceof Collection<?> collection)) {
+            return List.of();
+        }
+        return collection.stream()
+                .map(String::valueOf)
+                .filter(r -> !r.isBlank())
+                .map(r -> r.startsWith("ROLE_") ? r : "ROLE_" + r.toUpperCase())
+                .map(r -> (GrantedAuthority) new SimpleGrantedAuthority(r))
+                .toList();
     }
 
     @Bean

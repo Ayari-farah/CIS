@@ -18,12 +18,16 @@ import java.time.LocalDateTime;
 public class UserResponse {
     
     private Long id;
+    private String keycloakId;
     private String userName;
     private String email;
     private UserType userType;
 
     @JsonProperty("isAdmin")
     private boolean admin;
+    @JsonProperty("actif")
+    private boolean actif;
+    private boolean deletionRequested;
 
     private LocalDateTime createdAt;
     

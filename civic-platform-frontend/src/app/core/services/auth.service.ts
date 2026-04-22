@@ -1,21 +1,17 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { BehaviorSubject, Observable, tap, catchError, of } from 'rxjs';
-import { Router } from '@angular/router';
+import { BehaviorSubject, Observable, catchError, firstValueFrom, from, map, of, tap } from 'rxjs';
 import {
   User,
   LoginRequest,
   RegisterRequest,
-  AuthResponse,
-  RefreshTokenRequest,
   AccountType,
   UserType
 } from '../models/auth.models';
 import { environment } from '../../../environments/environment';
+import Keycloak, { KeycloakLoginOptions } from 'keycloak-js';
 
 const STORAGE_KEYS = {
-  TOKEN: 'auth_token',
-  REFRESH_TOKEN: 'auth_refresh_token',
   USER: 'auth_user'
 } as const;
 
@@ -23,45 +19,78 @@ const STORAGE_KEYS = {
   providedIn: 'root'
 })
 export class AuthService {
-  private readonly apiUrl = `${environment.apiUrl}/auth`;
+  private readonly profileUrl = `${environment.apiUrl}/users/me`;
+  private readonly keycloak = new Keycloak({
+    url: environment.keycloak.url,
+    realm: environment.keycloak.realm,
+    clientId: environment.keycloak.clientId
+  });
+  private initialized = false;
 
   private currentUserSubject = new BehaviorSubject<User | null>(this.loadUserFromStorage());
   public currentUser$ = this.currentUserSubject.asObservable();
 
-  constructor(
-    private http: HttpClient,
-    private router: Router
-  ) {}
+  constructor(private http: HttpClient) {}
 
-  login(credentials: LoginRequest): Observable<AuthResponse> {
-    return this.http.post<AuthResponse>(`${this.apiUrl}/login`, credentials).pipe(
-      tap((response) => this.handleAuthentication(response))
-    );
+  async initializeAuth(): Promise<void> {
+    if (this.initialized) {
+      return;
+    }
+    this.initialized = true;
+
+    const authenticated = await this.keycloak.init({
+      onLoad: 'check-sso',
+      pkceMethod: 'S256',
+      checkLoginIframe: false
+    });
+
+    if (!authenticated) {
+      this.clearAuthState();
+      return;
+    }
+
+    const tokenUser = this.buildUserFromToken();
+    if (tokenUser) {
+      this.updateCurrentUser(tokenUser);
+    }
+    await this.refreshProfileSnapshot();
   }
 
-  register(userData: RegisterRequest): Observable<AuthResponse> {
-    return this.http.post<AuthResponse>(`${this.apiUrl}/register`, userData).pipe(
-      tap((response) => this.handleAuthentication(response))
-    );
+  login(credentials: LoginRequest): Observable<void> {
+    const options: KeycloakLoginOptions = {
+      redirectUri: window.location.origin + '/dashboard'
+    };
+    if (credentials?.email?.trim()) {
+      (options as KeycloakLoginOptions & { loginHint?: string }).loginHint = credentials.email.trim();
+    }
+    return from(this.keycloak.login(options)).pipe(map(() => void 0));
+  }
+
+  register(userData: RegisterRequest): Observable<void> {
+    const options: KeycloakLoginOptions = {
+      action: 'register',
+      redirectUri: window.location.origin + '/dashboard'
+    };
+    if (userData?.email?.trim()) {
+      (options as KeycloakLoginOptions & { loginHint?: string }).loginHint = userData.email.trim();
+    }
+    return from(this.keycloak.login(options)).pipe(map(() => void 0));
+  }
+
+  loginRedirect(returnUrl?: string): void {
+    const sanitized = returnUrl?.startsWith('/') ? returnUrl : '/dashboard';
+    void this.keycloak.login({
+      redirectUri: window.location.origin + sanitized
+    });
   }
 
   logout(): void {
-    localStorage.removeItem(STORAGE_KEYS.TOKEN);
-    localStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
-    localStorage.removeItem(STORAGE_KEYS.USER);
-    this.currentUserSubject.next(null);
-    this.router.navigate(['/login']);
-  }
-
-  /** Used by JWT interceptor — body matches backend refresh contract. */
-  refreshToken(request: RefreshTokenRequest): Observable<AuthResponse> {
-    return this.http.post<AuthResponse>(`${this.apiUrl}/refresh`, request).pipe(
-      tap((response) => this.handleAuthentication(response))
-    );
+    this.clearAuthState();
+    void this.keycloak.logout({ redirectUri: `${window.location.origin}/login` });
   }
 
   getToken(): string | null {
-    return localStorage.getItem(STORAGE_KEYS.TOKEN);
+    return this.keycloak.token ?? null;
   }
 
   /** @alias getToken — interceptor */
@@ -69,8 +98,17 @@ export class AuthService {
     return this.getToken();
   }
 
-  getRefreshToken(): string | null {
-    return localStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN);
+  async getValidAccessToken(): Promise<string | null> {
+    if (!this.keycloak.authenticated) {
+      return null;
+    }
+    try {
+      await this.keycloak.updateToken(30);
+      return this.keycloak.token ?? null;
+    } catch {
+      this.clearAuthState();
+      return null;
+    }
   }
 
   getCurrentUser(): User | null {
@@ -83,7 +121,7 @@ export class AuthService {
   }
 
   isAuthenticated(): boolean {
-    return !!this.getToken();
+    return this.keycloak.authenticated === true;
   }
 
   /** @alias isAuthenticated */
@@ -92,7 +130,8 @@ export class AuthService {
   }
 
   isAdmin(): boolean {
-    return this.getCurrentUser()?.isAdmin === true;
+    const fromProfile = this.getCurrentUser()?.isAdmin === true;
+    return fromProfile || this.keycloak.hasRealmRole('ADMIN');
   }
 
   isRegularUser(): boolean {
@@ -141,10 +180,13 @@ export class AuthService {
   }
 
   refreshProfile(): Observable<User | null> {
+    if (!this.isLoggedIn()) {
+      return of(null);
+    }
     if (this.isAdmin()) {
       return of(this.getCurrentUser());
     }
-    return this.http.get<User>(`${environment.apiUrl}/users/me`).pipe(
+    return this.http.get<User>(this.profileUrl).pipe(
       tap((user) => {
         const prev = this.getCurrentUser();
         const merged: User =
@@ -158,41 +200,57 @@ export class AuthService {
     );
   }
 
-  private handleAuthentication(response: AuthResponse): void {
-    localStorage.setItem(STORAGE_KEYS.TOKEN, response.token);
-    localStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, response.refreshToken);
+  private async refreshProfileSnapshot(): Promise<void> {
+    await firstValueFrom(this.refreshProfile());
+  }
 
-    const isAdmin =
-      response.accountType === AccountType.ADMIN ||
-      (response.accountType as string) === 'ADMIN';
-    const accountType = isAdmin ? AccountType.ADMIN : AccountType.USER;
+  private buildUserFromToken(): User | null {
+    const claims = this.keycloak.tokenParsed as Record<string, unknown> | undefined;
+    if (!claims) {
+      return null;
+    }
+    const roles = this.extractRealmRoles(claims);
+    const isAdmin = roles.includes('ADMIN');
+    const preferredUsername = String(
+      claims['preferred_username'] ?? claims['email'] ?? claims['sub'] ?? 'user'
+    );
+    const emailRaw = claims['email'];
+    const email = typeof emailRaw === 'string' && emailRaw.trim()
+      ? emailRaw
+      : `${preferredUsername}@keycloak.local`;
+    const userTypeClaim = String(claims['user_type'] ?? '').toUpperCase();
+    const userType = Object.values(UserType).includes(userTypeClaim as UserType)
+      ? (userTypeClaim as UserType)
+      : undefined;
 
-    const user: User = {
-      id: response.userId,
-      userName: response.userName,
-      email: response.email,
-      accountType,
+    return {
+      id: Number(claims['local_user_id'] ?? -1),
+      userName: preferredUsername,
+      email,
+      accountType: isAdmin ? AccountType.ADMIN : AccountType.USER,
       isAdmin,
-      createdAt: response.createdAt as unknown as string,
-      userType: isAdmin ? undefined : response.userType,
-      badge: isAdmin ? undefined : response.badge,
-      points: isAdmin ? undefined : response.points,
-      awardedDate: isAdmin ? undefined : (response.awardedDate as unknown as string | undefined),
-      badgeProgress: isAdmin ? undefined : response.badgeProgress,
-      firstName: isAdmin ? undefined : response.firstName,
-      lastName: isAdmin ? undefined : response.lastName,
-      phone: isAdmin ? undefined : response.phone,
-      address: isAdmin ? undefined : response.address,
-      birthDate: isAdmin ? undefined : (response.birthDate as unknown as string | undefined),
-      companyName: isAdmin ? undefined : response.companyName,
-      associationName: isAdmin ? undefined : response.associationName,
-      contactName: isAdmin ? undefined : response.contactName,
-      contactEmail: isAdmin ? undefined : response.contactEmail,
-      hasProfilePicture: isAdmin ? undefined : response.hasProfilePicture
+      userType,
+      createdAt: new Date().toISOString(),
+      firstName: typeof claims['given_name'] === 'string' ? claims['given_name'] : undefined,
+      lastName: typeof claims['family_name'] === 'string' ? claims['family_name'] : undefined
     };
+  }
 
-    localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
-    this.currentUserSubject.next(user);
+  private extractRealmRoles(claims: Record<string, unknown>): string[] {
+    const realmAccess = claims['realm_access'];
+    if (!realmAccess || typeof realmAccess !== 'object') {
+      return [];
+    }
+    const roles = (realmAccess as { roles?: unknown }).roles;
+    if (!Array.isArray(roles)) {
+      return [];
+    }
+    return roles.map((r) => String(r).toUpperCase());
+  }
+
+  private clearAuthState(): void {
+    localStorage.removeItem(STORAGE_KEYS.USER);
+    this.currentUserSubject.next(null);
   }
 
   private loadUserFromStorage(): User | null {

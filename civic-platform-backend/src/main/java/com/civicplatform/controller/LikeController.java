@@ -2,7 +2,7 @@ package com.civicplatform.controller;
 
 import com.civicplatform.service.LikeService;
 import com.civicplatform.entity.User;
-import com.civicplatform.repository.UserRepository;
+import com.civicplatform.security.CurrentUserResolver;
 import com.civicplatform.security.RegularAccountPolicy;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.*;
 public class LikeController {
 
     private final LikeService likeService;
-    private final UserRepository userRepository;
+    private final CurrentUserResolver currentUserResolver;
 
     @Operation(summary = "Like a post")
     @PostMapping("/posts/{postId}")
@@ -58,7 +58,6 @@ public class LikeController {
     }
 
     private User getUserFromAuthentication(Authentication authentication) {
-        return userRepository.findByEmail(authentication.getName())
-                .orElseThrow(() -> new RuntimeException("Authenticated user not found"));
+        return currentUserResolver.resolveRequired(authentication);
     }
 }

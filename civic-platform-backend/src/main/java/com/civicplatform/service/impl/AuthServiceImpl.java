@@ -14,6 +14,7 @@ import com.civicplatform.security.JwtService;
 import com.civicplatform.service.AuthService;
 import com.civicplatform.service.UserResponseAssembler;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Profile;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -28,6 +29,7 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
+@Profile("legacy-auth")
 public class AuthServiceImpl implements AuthService {
 
     private final UserRepository userRepository;
@@ -51,6 +53,8 @@ public class AuthServiceImpl implements AuthService {
         User user = userMapper.toEntityForCreate(userRequest);
         user.setPassword(passwordEncoder.encode(userRequest.getPassword()));
         user.setAdmin(false);
+        user.setActif(true);
+        user.setDeletionRequested(false);
         if (user.getPoints() == null) {
             user.setPoints(0);
         }

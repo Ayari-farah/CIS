@@ -5,7 +5,7 @@ import com.civicplatform.dto.response.CommentResponse;
 import com.civicplatform.entity.CommentAttachment;
 import com.civicplatform.entity.User;
 import com.civicplatform.repository.CommentAttachmentRepository;
-import com.civicplatform.repository.UserRepository;
+import com.civicplatform.security.CurrentUserResolver;
 import com.civicplatform.security.RegularAccountPolicy;
 import com.civicplatform.service.CommentService;
 import com.civicplatform.service.PostMediaStorageService;
@@ -32,7 +32,7 @@ import java.util.List;
 public class CommentController {
 
     private final CommentService commentService;
-    private final UserRepository userRepository;
+    private final CurrentUserResolver currentUserResolver;
     private final CommentAttachmentRepository commentAttachmentRepository;
     private final PostMediaStorageService postMediaStorageService;
 
@@ -122,17 +122,15 @@ public class CommentController {
     }
 
     private void checkCommentOwnership(Long commentId, Authentication authentication) {
-        User user = userRepository.findByEmail(authentication.getName())
-                .orElseThrow(() -> new RuntimeException("Authenticated user not found"));
+        User user = currentUserResolver.resolveRequired(authentication);
         RegularAccountPolicy.requireRegularUser(user);
         CommentResponse comment = commentService.getCommentById(commentId);
-        if (!authentication.getName().equals(comment.getAuthorEmail())) {
+        if (!user.getEmail().equalsIgnoreCase(comment.getAuthorEmail())) {
             throw new org.springframework.security.access.AccessDeniedException("You are not the author of this comment");
         }
     }
 
     private User getUserFromAuthentication(Authentication authentication) {
-        return userRepository.findByEmail(authentication.getName())
-                .orElseThrow(() -> new RuntimeException("Authenticated user not found"));
+        return currentUserResolver.resolveRequired(authentication);
     }
 }

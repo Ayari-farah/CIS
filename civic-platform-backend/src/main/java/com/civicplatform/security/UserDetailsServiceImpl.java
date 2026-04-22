@@ -3,6 +3,7 @@ package com.civicplatform.security;
 import com.civicplatform.entity.User;
 import com.civicplatform.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Profile;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -10,6 +11,7 @@ import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
+@Profile("legacy-auth")
 public class UserDetailsServiceImpl implements UserDetailsService {
 
     private final UserRepository userRepository;

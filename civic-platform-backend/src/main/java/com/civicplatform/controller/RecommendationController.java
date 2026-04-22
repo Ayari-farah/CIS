@@ -3,7 +3,7 @@ package com.civicplatform.controller;
 import com.civicplatform.dto.response.FeedResponse;
 import com.civicplatform.entity.User;
 import com.civicplatform.enums.UserType;
-import com.civicplatform.repository.UserRepository;
+import com.civicplatform.security.CurrentUserResolver;
 import com.civicplatform.service.FeedRecommendationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -21,15 +21,14 @@ import org.springframework.web.bind.annotation.RestController;
 @Tag(name = "Recommendations", description = "ML-powered personalized feed")
 public class RecommendationController {
 
-    private final UserRepository userRepository;
+    private final CurrentUserResolver currentUserResolver;
     private final FeedRecommendationService feedRecommendationService;
 
     @Operation(summary = "Personalized feed: recommended upcoming events (ML service)")
     @GetMapping("/feed")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<FeedResponse> getRecommendedFeed(Authentication authentication) {
-        User user = userRepository.findByEmail(authentication.getName())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+        User user = currentUserResolver.resolveRequired(authentication);
 
         if (user.isAdmin() || user.getUserType() == UserType.DONOR) {
             return ResponseEntity.status(403).build();

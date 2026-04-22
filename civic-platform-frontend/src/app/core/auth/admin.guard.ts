@@ -16,9 +16,7 @@ export class AdminGuard implements CanActivate {
   ): Observable<boolean> | Promise<boolean> | boolean {
 
     if (!this.authService.isLoggedIn()) {
-      this.router.navigate(['/login'], {
-        queryParams: { returnUrl: state.url }
-      });
+      this.authService.loginRedirect(state.url);
       return false;
     }
 

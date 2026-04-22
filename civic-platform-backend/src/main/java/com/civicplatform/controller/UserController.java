@@ -7,6 +7,7 @@ import com.civicplatform.enums.UserType;
 import com.civicplatform.entity.User;
 import com.civicplatform.repository.EventCitizenInvitationRepository;
 import com.civicplatform.repository.UserRepository;
+import com.civicplatform.security.CurrentUserResolver;
 import com.civicplatform.security.RegularAccountPolicy;
 import com.civicplatform.service.ProfilePictureStorageService;
 import com.civicplatform.service.QrCodeService;
@@ -39,6 +40,7 @@ public class UserController {
 
     private final UserService userService;
     private final UserRepository userRepository;
+    private final CurrentUserResolver currentUserResolver;
     private final EventCitizenInvitationRepository eventCitizenInvitationRepository;
     private final QrCodeService qrCodeService;
     private final ProfilePictureStorageService profilePictureStorageService;
@@ -54,12 +56,11 @@ public class UserController {
     @Operation(summary = "Get current authenticated regular user profile (not for platform admins)")
     @GetMapping("/me")
     public ResponseEntity<UserResponse> getCurrentUser(Authentication authentication) {
-        User user = userRepository.findByEmail(authentication.getName())
-                .orElseThrow(() -> new AccessDeniedException("User not resolved"));
+        User user = currentUserResolver.resolveOrCreate(authentication);
         if (user.isAdmin()) {
             throw new AccessDeniedException("Platform admin accounts do not have a participant profile. Use admin tools.");
         }
-        return ResponseEntity.ok(userService.getUserByEmail(user.getEmail()));
+        return ResponseEntity.ok(userService.getUserById(user.getId()));
     }
 
     @Operation(summary = "Get profile picture image (public URL for img tags)")
@@ -104,13 +105,12 @@ public class UserController {
             @PathVariable Long id,
             @RequestParam("file") MultipartFile file,
             Authentication authentication) {
-        User authUser = userRepository.findByEmail(authentication.getName())
-                .orElseThrow(() -> new AccessDeniedException("User not resolved"));
+        User authUser = currentUserResolver.resolveRequired(authentication);
         if (authUser.isAdmin()) {
             throw new AccessDeniedException("Admins do not have participant profiles.");
         }
         UserResponse current = userService.getUserById(id);
-        if (!authentication.getName().equalsIgnoreCase(current.getEmail())) {
+        if (!authUser.getEmail().equalsIgnoreCase(current.getEmail())) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
         UserResponse response = userService.uploadProfilePicture(id, file);
@@ -120,8 +120,7 @@ public class UserController {
     @Operation(summary = "Download PNG QR code with user identity (plain-text CivicIdentity payload)")
     @GetMapping("/{id}/qrcode")
     public ResponseEntity<byte[]> getUserQrCode(@PathVariable Long id, Authentication authentication) {
-        User authUser = userRepository.findByEmail(authentication.getName())
-                .orElseThrow(() -> new AccessDeniedException("User not resolved"));
+        User authUser = currentUserResolver.resolveRequired(authentication);
         RegularAccountPolicy.requireRegularUser(authUser);
         if (!authUser.getId().equals(id)) {
             throw new AccessDeniedException("You can only access your own QR code");
@@ -160,8 +159,7 @@ public class UserController {
     @Operation(summary = "Get user by ID (self, platform admin, or event organizer who invited this citizen)")
     @GetMapping("/{id}")
     public ResponseEntity<UserResponse> getUserById(@PathVariable Long id, Authentication authentication) {
-        User authUser = userRepository.findByEmail(authentication.getName())
-                .orElseThrow(() -> new AccessDeniedException("User not resolved"));
+        User authUser = currentUserResolver.resolveRequired(authentication);
         if (!authUser.isAdmin() && !authUser.getId().equals(id)) {
             boolean invitedByOrganizer = eventCitizenInvitationRepository.existsByCitizenIdAndEventOrganizerId(
                     id, authUser.getId());
@@ -184,13 +182,12 @@ public class UserController {
     @Operation(summary = "Update user profile")
     @PutMapping("/{id}/profile")
     public ResponseEntity<UserResponse> updateProfile(@PathVariable Long id, @Valid @RequestBody ProfileUpdateRequest request, Authentication authentication) {
-        User authUser = userRepository.findByEmail(authentication.getName())
-                .orElseThrow(() -> new AccessDeniedException("User not resolved"));
+        User authUser = currentUserResolver.resolveRequired(authentication);
         if (authUser.isAdmin()) {
             throw new AccessDeniedException("Admins do not have participant profiles.");
         }
         UserResponse current = userService.getUserById(id);
-        if (!authentication.getName().equalsIgnoreCase(current.getEmail())) {
+        if (!authUser.getEmail().equalsIgnoreCase(current.getEmail())) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
         UserResponse response = userService.updateProfile(id, request);
