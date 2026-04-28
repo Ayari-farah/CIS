@@ -42,28 +42,25 @@ CIS/
 
 ## Technology Stack
 
-### Backend
-- Java 17+
-- Spring Boot 3.x
-- Spring Security
-- Spring Data JPA + Hibernate
-- MariaDB
-- MapStruct
-- Bean Validation
-- SpringDoc OpenAPI
-- Lombok
-
-### Frontend
-- Angular 17+
-- TypeScript
-- RxJS
-- Angular Router + Forms
-- TailwindCSS
-
-### ML / Platform
-- Python-based `ml-service` (Dockerized)
-- Keycloak for identity and SSO flows
-- Docker Compose for local multi-service startup
+| Layer | Technology | Purpose |
+|---|---|---|
+| Backend | Java 17+ | Core programming language |
+| Backend | Spring Boot 3.x | Application framework and runtime |
+| Backend | Spring Security | Authentication and authorization |
+| Backend | Spring Data JPA + Hibernate | ORM and persistence layer |
+| Backend | MariaDB | Relational database |
+| Backend | MapStruct | DTO and entity mapping |
+| Backend | Bean Validation | Request and model validation |
+| Backend | SpringDoc OpenAPI | API documentation |
+| Backend | Lombok | Boilerplate code reduction |
+| Frontend | Angular 17+ | Frontend framework |
+| Frontend | TypeScript | Type-safe application code |
+| Frontend | RxJS | Reactive streams and async handling |
+| Frontend | Angular Router + Forms | Routing and form management |
+| Frontend | TailwindCSS | Utility-first styling |
+| ML / Platform | Python-based `ml-service` (Dockerized) | Recommendation and ML workflows |
+| ML / Platform | Keycloak | Identity provider and SSO flows |
+| ML / Platform | Docker Compose | Local multi-service orchestration |
 
 ## Setup
 
